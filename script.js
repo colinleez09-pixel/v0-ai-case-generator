@@ -1141,18 +1141,7 @@ function generateJsonTree(data, treeName, level, parentPath = '', isResponse = f
   }
   
   let html = ''
-  // 对keys进行排序，确保header在body之前
-  const keys = Object.keys(data).sort((a, b) => {
-    // 定义优先级顺序：header > body > 其他
-    const priority = { 'header': 0, 'headers': 0, 'body': 1 }
-    const aPriority = priority[a.toLowerCase()] !== undefined ? priority[a.toLowerCase()] : 2
-    const bPriority = priority[b.toLowerCase()] !== undefined ? priority[b.toLowerCase()] : 2
-    if (aPriority !== bPriority) {
-      return aPriority - bPriority
-    }
-    // 同优先级按字母顺序排序
-    return a.localeCompare(b)
-  })
+  const keys = Object.keys(data)
   
   keys.forEach(key => {
     const node = data[key]
@@ -1514,43 +1503,39 @@ function bindGlobalShowAllFieldsToggle() {
       const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
       
       if (tree) {
-        // 先处理所有叶子节点
         tree.querySelectorAll('.json-tree-leaf').forEach(leaf => {
+          const isDefault = leaf.dataset.isDefault === 'true'
           const input = leaf.querySelector('.json-tree-input')
           const hasValue = input && input.value && input.value.trim() !== ''
           
           if (showAllFields) {
             // 显示全部字段
-            leaf.style.display = ''
+            leaf.style.display = 'block'
           } else {
-            // 仅显示有值的字段
-            leaf.style.display = hasValue ? '' : 'none'
+            // 仅显示有值的字段或非默认字段
+            leaf.style.display = (hasValue || !isDefault) ? 'block' : 'none'
           }
         })
         
-        // 从最深层往上处理嵌套节点：如果父节点下所有子节点都被隐藏，则隐藏父节点
-        // 获取所有branch并按层级从深到浅排序
-        const branches = Array.from(tree.querySelectorAll('.json-tree-branch'))
-        branches.sort((a, b) => {
-          const aLevel = parseInt(a.dataset.level || '0')
-          const bLevel = parseInt(b.dataset.level || '0')
-          return bLevel - aLevel // 深层级优先
-        })
-        
-        branches.forEach(branch => {
+        // 同时处理嵌套节点：如果父节点下所有子节点都被隐藏，则隐藏父节点
+        tree.querySelectorAll('.json-tree-branch').forEach(branch => {
           const children = branch.querySelector('.json-tree-children')
           if (children) {
+            const visibleLeaves = children.querySelectorAll('.json-tree-leaf[style*="display: block"], .json-tree-leaf:not([style*="display"])')
+            const visibleBranches = children.querySelectorAll('.json-tree-branch[style*="display: block"], .json-tree-branch:not([style*="display: none"])')
+            const hasVisibleChildren = visibleLeaves.length > 0 || visibleBranches.length > 0
+            
             if (showAllFields) {
-              branch.style.display = ''
+              branch.style.display = 'block'
             } else {
-              // 检查直接子元素是否有可见的
+              // 检查是否有可见的子元素
               let hasVisible = false
               children.querySelectorAll(':scope > .json-tree-leaf, :scope > .json-tree-branch').forEach(child => {
                 if (child.style.display !== 'none') {
                   hasVisible = true
                 }
               })
-              branch.style.display = hasVisible ? '' : 'none'
+              branch.style.display = hasVisible ? 'block' : 'none'
             }
           }
         })
@@ -3046,7 +3031,7 @@ async function renderFilterPanel() {
   if (caseLibraryOptions.length === 0) {
     try {
       caseLibraryOptions = await fetchCaseLibraryOptions()
-      console.log('[v0] ���例库选项已加载:', caseLibraryOptions)
+      console.log('[v0] 案例库选项已加载:', caseLibraryOptions)
     } catch (error) {
       console.error('[v0] 加载案例库选项失败:', error)
       // 使用默认选项

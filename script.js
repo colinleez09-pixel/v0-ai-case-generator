@@ -1141,7 +1141,18 @@ function generateJsonTree(data, treeName, level, parentPath = '', isResponse = f
   }
   
   let html = ''
-  const keys = Object.keys(data)
+  // 对keys进行排序，确保header在body之前
+  const keys = Object.keys(data).sort((a, b) => {
+    // 定义优先级顺序：header > body > 其他
+    const priority = { 'header': 0, 'headers': 0, 'body': 1 }
+    const aPriority = priority[a.toLowerCase()] !== undefined ? priority[a.toLowerCase()] : 2
+    const bPriority = priority[b.toLowerCase()] !== undefined ? priority[b.toLowerCase()] : 2
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority
+    }
+    // 同优先级按字母顺序排序
+    return a.localeCompare(b)
+  })
   
   keys.forEach(key => {
     const node = data[key]
@@ -1285,41 +1296,50 @@ function bindJsonTreeEvents() {
   const trees = elements.paramConfigContainer.querySelectorAll('[data-json-tree]')
   
   trees.forEach(tree => {
-    const treeName = tree.dataset.jsonTree
+  const treeName = tree.dataset.jsonTree
+  
+  // 展开/折叠节点 - 防止重复绑定
+  tree.querySelectorAll('[data-toggle-node]').forEach(header => {
+    if (header.dataset.eventsBound === 'true') return
+    header.dataset.eventsBound = 'true'
     
-    // 展开/折叠节点
-    tree.querySelectorAll('[data-toggle-node]').forEach(header => {
-      header.addEventListener('click', (e) => {
-        e.stopPropagation()
-        const node = header.closest('.json-tree-branch')
-        const children = node.querySelector('.json-tree-children')
-        const arrow = header.querySelector('.json-tree-arrow')
-        
-        if (children.style.display === 'none') {
-          children.style.display = 'block'
-          arrow.style.transform = 'rotate(90deg)'
-          node.classList.add('expanded')
-        } else {
-          children.style.display = 'none'
-          arrow.style.transform = 'rotate(0deg)'
-          node.classList.remove('expanded')
-        }
-      })
-    })
-    
-    // 输入值变化时更新隐藏字段
-    tree.querySelectorAll('.json-tree-input').forEach(input => {
-      input.addEventListener('change', () => {
-        updateJsonTreeValue(treeName)
-      })
-      input.addEventListener('input', () => {
-        updateJsonTreeValue(treeName)
-      })
+    header.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const node = header.closest('.json-tree-branch')
+      const children = node.querySelector('.json-tree-children')
+      const arrow = header.querySelector('.json-tree-arrow')
+      
+      if (children.style.display === 'none') {
+        children.style.display = 'block'
+        arrow.style.transform = 'rotate(90deg)'
+        node.classList.add('expanded')
+      } else {
+        children.style.display = 'none'
+        arrow.style.transform = 'rotate(0deg)'
+        node.classList.remove('expanded')
+      }
     })
   })
   
-  // 展开全部按钮
+  // 输入值变化时更新隐藏字段 - 防止重复绑定
+  tree.querySelectorAll('.json-tree-input').forEach(input => {
+    if (input.dataset.eventsBound === 'true') return
+    input.dataset.eventsBound = 'true'
+    
+    input.addEventListener('change', () => {
+      updateJsonTreeValue(treeName)
+    })
+    input.addEventListener('input', () => {
+      updateJsonTreeValue(treeName)
+    })
+  })
+  })
+  
+  // 展开全部按钮 - 防止重复绑定
   elements.paramConfigContainer.querySelectorAll('.json-tree-expand-all').forEach(btn => {
+    if (btn.dataset.eventsBound === 'true') return
+    btn.dataset.eventsBound = 'true'
+    
     btn.addEventListener('click', () => {
       const treeName = btn.dataset.treeName
       const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
@@ -1335,8 +1355,11 @@ function bindJsonTreeEvents() {
     })
   })
   
-  // 折叠全部按钮
+  // 折叠全部按钮 - 防止重复绑定
   elements.paramConfigContainer.querySelectorAll('.json-tree-collapse-all').forEach(btn => {
+    if (btn.dataset.eventsBound === 'true') return
+    btn.dataset.eventsBound = 'true'
+    
     btn.addEventListener('click', () => {
       const treeName = btn.dataset.treeName
       const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
@@ -1352,8 +1375,11 @@ function bindJsonTreeEvents() {
     })
   })
   
-  // 验证规则选择器
+  // 验证规则选择器 - 防止重复绑定
   elements.paramConfigContainer.querySelectorAll('.validation-option').forEach(btn => {
+    if (btn.dataset.eventsBound === 'true') return
+    btn.dataset.eventsBound = 'true'
+    
     btn.addEventListener('click', () => {
       const validation = btn.dataset.validation
       const path = btn.dataset.path
@@ -1370,8 +1396,11 @@ function bindJsonTreeEvents() {
     })
   })
   
-  // saveAs 输入框
+  // saveAs 输入框 - 防止重复绑定
   elements.paramConfigContainer.querySelectorAll('.json-tree-saveas-input').forEach(input => {
+    if (input.dataset.eventsBound === 'true') return
+    input.dataset.eventsBound = 'true'
+    
     input.addEventListener('change', () => {
       const path = input.dataset.path
       const treeName = input.dataset.tree
@@ -1474,25 +1503,55 @@ function setNestedProperty(obj, path, property, value) {
 }
 
 function bindGlobalShowAllFieldsToggle() {
-  // 绑定每个json-tree的显示切换
+  // 绑定每个json-tree的显示切换 - 防止重复绑定
   elements.paramConfigContainer.querySelectorAll('.json-tree-show-all-fields').forEach(checkbox => {
+    if (checkbox.dataset.eventsBound === 'true') return
+    checkbox.dataset.eventsBound = 'true'
+    
     checkbox.addEventListener('change', () => {
       const treeName = checkbox.dataset.treeName
       const showAllFields = checkbox.checked
       const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
       
       if (tree) {
+        // 先处理所有叶子节点
         tree.querySelectorAll('.json-tree-leaf').forEach(leaf => {
-          const isDefault = leaf.dataset.isDefault === 'true'
           const input = leaf.querySelector('.json-tree-input')
           const hasValue = input && input.value && input.value.trim() !== ''
           
           if (showAllFields) {
             // 显示全部字段
-            leaf.style.display = 'block'
+            leaf.style.display = ''
           } else {
-            // 仅显示有值的字段或非默认字段
-            leaf.style.display = (hasValue || !isDefault) ? 'block' : 'none'
+            // 仅显示有值的字段
+            leaf.style.display = hasValue ? '' : 'none'
+          }
+        })
+        
+        // 从最深层往上处理嵌套节点：如果父节点下所有子节点都被隐藏，则隐藏父节点
+        // 获取所有branch并按层级从深到浅排序
+        const branches = Array.from(tree.querySelectorAll('.json-tree-branch'))
+        branches.sort((a, b) => {
+          const aLevel = parseInt(a.dataset.level || '0')
+          const bLevel = parseInt(b.dataset.level || '0')
+          return bLevel - aLevel // 深层级优先
+        })
+        
+        branches.forEach(branch => {
+          const children = branch.querySelector('.json-tree-children')
+          if (children) {
+            if (showAllFields) {
+              branch.style.display = ''
+            } else {
+              // 检查直接子元素是否有可见的
+              let hasVisible = false
+              children.querySelectorAll(':scope > .json-tree-leaf, :scope > .json-tree-branch').forEach(child => {
+                if (child.style.display !== 'none') {
+                  hasVisible = true
+                }
+              })
+              branch.style.display = hasVisible ? '' : 'none'
+            }
           }
         })
       }
@@ -1508,6 +1567,10 @@ function bindGlobalShowAllFieldsToggle() {
 
 function bindTemplateSelectEvents() {
   elements.paramConfigContainer.querySelectorAll('.param-template-select').forEach(select => {
+    // 防止重复绑定事件
+    if (select.dataset.eventsBound === 'true') return
+    select.dataset.eventsBound = 'true'
+    
     const name = select.dataset.name
     const customInput = elements.paramConfigContainer.querySelector(`[data-name="${name}-custom"]`)
     
@@ -1521,7 +1584,8 @@ function bindTemplateSelectEvents() {
       }
     })
     
-    if (customInput) {
+    if (customInput && customInput.dataset.eventsBound !== 'true') {
+      customInput.dataset.eventsBound = 'true'
       customInput.addEventListener('input', async () => {
         if (customInput.value) {
           select.value = ''
@@ -1627,6 +1691,10 @@ function bindComboBoxEvents() {
   const comboWrappers = elements.paramConfigContainer.querySelectorAll('[data-combo]')
   
   comboWrappers.forEach(wrapper => {
+    // 防止重复绑定
+    if (wrapper.dataset.eventsBound === 'true') return
+    wrapper.dataset.eventsBound = 'true'
+    
     const input = wrapper.querySelector('.param-combo-input')
     const toggle = wrapper.querySelector('.param-combo-toggle')
     const dropdown = wrapper.querySelector('.param-combo-dropdown')
@@ -1635,11 +1703,11 @@ function bindComboBoxEvents() {
       return
     }
     
-  // 切换下拉框显示
-  toggle.addEventListener('click', (e) => {
-    e.stopPropagation()
-    wrapper.classList.toggle('open')
-  })
+    // 切换下拉框显示
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation()
+      wrapper.classList.toggle('open')
+    })
     
     // 输入时过滤选项
     input.addEventListener('input', () => {
@@ -1675,9 +1743,13 @@ function bindAutocompleteEvents() {
   const autocompleteInputs = elements.paramConfigContainer.querySelectorAll('[data-autocomplete]')
   
   autocompleteInputs.forEach(input => {
-  // 支持param-autocomplete-wrapper和json-tree-input-wrapper两种容器
-  const wrapper = input.closest('.param-autocomplete-wrapper') || input.closest('.json-tree-input-wrapper')
-  const dropdown = wrapper?.querySelector('.param-autocomplete-dropdown') || wrapper?.querySelector('.json-tree-autocomplete-dropdown')
+    // 防止重复绑定
+    if (input.dataset.autocompleteEventsBound === 'true') return
+    input.dataset.autocompleteEventsBound = 'true'
+    
+    // 支持param-autocomplete-wrapper和json-tree-input-wrapper两种容器
+    const wrapper = input.closest('.param-autocomplete-wrapper') || input.closest('.json-tree-input-wrapper')
+    const dropdown = wrapper?.querySelector('.param-autocomplete-dropdown') || wrapper?.querySelector('.json-tree-autocomplete-dropdown')
     
     if (!dropdown) return
     
@@ -1771,6 +1843,10 @@ function bindVariableListEvents() {
   const variablesList = elements.paramConfigContainer.querySelector('[data-variables-list]')
   
   if (addBtn && variablesList) {
+    // 防止重复绑定
+    if (addBtn.dataset.eventsBound === 'true') return
+    addBtn.dataset.eventsBound = 'true'
+    
     addBtn.addEventListener('click', () => {
       const newItem = document.createElement('div')
       newItem.className = 'param-variable-item'
@@ -1789,8 +1865,11 @@ function bindVariableListEvents() {
       })
     })
     
-    // 绑定删除按钮
+    // 绑定删除按钮 - 防止重复绑定
     variablesList.querySelectorAll('[data-remove-var]').forEach(btn => {
+      if (btn.dataset.eventsBound === 'true') return
+      btn.dataset.eventsBound = 'true'
+      
       btn.addEventListener('click', () => {
         btn.closest('.param-variable-item').remove()
       })
@@ -2028,7 +2107,7 @@ async function sendMessage() {
   const responses = [
     "好的，我已记录您的需求。还有其他需要补充的信息吗？如果没有，请回复'开始生成'，我将为您生成测试用例。",
     "收到，这对生成高质量的测试用例很有帮助。如果准备好了，请回复'开始生成'。",
-    "明白了，我会根据这些信息优化测试用例。请回复'开始生成'开始生成过程。",
+    "明白了，我会根据这些信息优化测试用例。请回复'开始生成'开始生成��程。",
   ]
 
   if (message.includes("开始生成") || message.includes("生成")) {
@@ -2967,7 +3046,7 @@ async function renderFilterPanel() {
   if (caseLibraryOptions.length === 0) {
     try {
       caseLibraryOptions = await fetchCaseLibraryOptions()
-      console.log('[v0] 案例库选项已加载:', caseLibraryOptions)
+      console.log('[v0] ���例库选项已加载:', caseLibraryOptions)
     } catch (error) {
       console.error('[v0] 加载案例库选项失败:', error)
       // 使用默认选项
@@ -3625,7 +3704,7 @@ function renderHistoryEditDetail() {
 
 function renderHistoryEditSectionReadonly(items, container, sectionType) {
   if (!items || items.length === 0) {
-    const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步骤" : "预期结果"
+    const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步��" : "预期结果"
     container.innerHTML = `<p class="empty-hint">暂无${hintText}</p>`
     return
   }

@@ -17,6 +17,315 @@ CASE_LIBRARY_OPTIONS = [
     {"value": "archived", "label": "已归档精品案例库"}
 ]
 
+# 模板特定参数配置 - 不同模板有不同的请求/响应结构
+TEMPLATE_SPECIFIC_PARAMS = {
+    'api': {
+        '@\\soap\\CreateSubscriber.xml': {
+            'rReq': {
+                'header': {
+                    'version': {'type': 'string', 'value': '1.0', 'isDefault': True},
+                    'bizCode': {'type': 'string', 'value': 'CREATE_SUBSCRIBER', 'isDefault': True},
+                    'transId': {'type': 'string', 'value': '${G.uuid()}', 'isDefault': True},
+                    'timestamp': {'type': 'string', 'value': '${G.now()}', 'isDefault': True}
+                },
+                'body': {
+                    'subscriberInfo': {
+                        'msisdn': {'type': 'string', 'value': '${My_SubIdentity}'},
+                        'imsi': {'type': 'string', 'value': '${My_IMSI}'},
+                        'status': {'type': 'number', 'value': 1, 'isDefault': True},
+                        'createDate': {'type': 'date', 'value': '${G.today()}', 'isDefault': True}
+                    },
+                    'offeringInfo': {
+                        'primaryOfferingId': {'type': 'string', 'value': '${My_PrimaryOfferingID}'},
+                        'effectiveDate': {'type': 'date', 'value': '${G.today()}', 'isDefault': True}
+                    }
+                }
+            },
+            'rRsp': {
+                'resultCode': {'type': 'string', 'value': '0', 'validation': 'equals', 'isDefault': True},
+                'resultMsg': {'type': 'string', 'value': 'Success', 'validation': 'noCare', 'isDefault': True},
+                'data': {
+                    'subscriberId': {'type': 'string', 'value': '', 'validation': 'notEmpty', 'saveAs': ''},
+                    'accountId': {'type': 'string', 'value': '', 'validation': 'notEmpty', 'saveAs': ''}
+                }
+            }
+        },
+        '@\\soap\\QuerySubscriber.xml': {
+            'rReq': {
+                'header': {
+                    'version': {'type': 'string', 'value': '1.0', 'isDefault': True},
+                    'bizCode': {'type': 'string', 'value': 'QUERY_SUBSCRIBER', 'isDefault': True},
+                    'transId': {'type': 'string', 'value': '${G.uuid()}', 'isDefault': True},
+                    'timestamp': {'type': 'string', 'value': '${G.now()}', 'isDefault': True}
+                },
+                'body': {
+                    'queryCondition': {
+                        'msisdn': {'type': 'string', 'value': '${My_SubIdentity}'},
+                        'queryType': {'type': 'string', 'value': 'FULL', 'isDefault': True}
+                    }
+                }
+            },
+            'rRsp': {
+                'resultCode': {'type': 'string', 'value': '0', 'validation': 'equals', 'isDefault': True},
+                'data': {
+                    'subscriberInfo': {
+                        'msisdn': {'type': 'string', 'value': '', 'validation': 'notEmpty'},
+                        'status': {'type': 'number', 'value': '', 'validation': 'noCare'},
+                        'balance': {'type': 'number', 'value': '', 'validation': 'noCare', 'saveAs': 'My_Balance'}
+                    }
+                }
+            }
+        },
+        '@\\soap\\ModifySubscriber.xml': {
+            'rReq': {
+                'header': {
+                    'version': {'type': 'string', 'value': '1.0', 'isDefault': True},
+                    'bizCode': {'type': 'string', 'value': 'MODIFY_SUBSCRIBER', 'isDefault': True},
+                    'transId': {'type': 'string', 'value': '${G.uuid()}', 'isDefault': True},
+                    'timestamp': {'type': 'string', 'value': '${G.now()}', 'isDefault': True}
+                },
+                'body': {
+                    'subscriberId': {'type': 'string', 'value': '${My_SubscriberId}'},
+                    'modifyInfo': {
+                        'newStatus': {'type': 'number', 'value': ''},
+                        'reason': {'type': 'string', 'value': '', 'isDefault': True}
+                    }
+                }
+            },
+            'rRsp': {
+                'resultCode': {'type': 'string', 'value': '0', 'validation': 'equals', 'isDefault': True},
+                'resultMsg': {'type': 'string', 'value': 'Success', 'validation': 'noCare', 'isDefault': True}
+            }
+        },
+        '@\\soap\\DeleteSubscriber.xml': {
+            'rReq': {
+                'header': {
+                    'version': {'type': 'string', 'value': '1.0', 'isDefault': True},
+                    'bizCode': {'type': 'string', 'value': 'DELETE_SUBSCRIBER', 'isDefault': True},
+                    'transId': {'type': 'string', 'value': '${G.uuid()}', 'isDefault': True},
+                    'timestamp': {'type': 'string', 'value': '${G.now()}', 'isDefault': True}
+                },
+                'body': {
+                    'subscriberId': {'type': 'string', 'value': '${My_SubscriberId}'},
+                    'deleteReason': {'type': 'string', 'value': ''}
+                }
+            },
+            'rRsp': {
+                'resultCode': {'type': 'string', 'value': '0', 'validation': 'equals', 'isDefault': True}
+            }
+        },
+        '@\\soap\\CreateAccount.xml': {
+            'rReq': {
+                'header': {
+                    'version': {'type': 'string', 'value': '1.0', 'isDefault': True},
+                    'bizCode': {'type': 'string', 'value': 'CREATE_ACCOUNT', 'isDefault': True},
+                    'transId': {'type': 'string', 'value': '${G.uuid()}', 'isDefault': True},
+                    'timestamp': {'type': 'string', 'value': '${G.now()}', 'isDefault': True}
+                },
+                'body': {
+                    'accountInfo': {
+                        'accountName': {'type': 'string', 'value': ''},
+                        'accountType': {'type': 'string', 'value': 'PERSONAL', 'isDefault': True},
+                        'currencyCode': {'type': 'string', 'value': 'CNY', 'isDefault': True}
+                    }
+                }
+            },
+            'rRsp': {
+                'resultCode': {'type': 'string', 'value': '0', 'validation': 'equals', 'isDefault': True},
+                'data': {
+                    'accountId': {'type': 'string', 'value': '', 'validation': 'notEmpty', 'saveAs': 'My_AccountId'}
+                }
+            }
+        },
+        '@\\soap\\Payment.xml': {
+            'rReq': {
+                'header': {
+                    'version': {'type': 'string', 'value': '1.0', 'isDefault': True},
+                    'bizCode': {'type': 'string', 'value': 'PAYMENT', 'isDefault': True},
+                    'transId': {'type': 'string', 'value': '${G.uuid()}', 'isDefault': True},
+                    'timestamp': {'type': 'string', 'value': '${G.now()}', 'isDefault': True}
+                },
+                'body': {
+                    'paymentInfo': {
+                        'accountId': {'type': 'string', 'value': '${My_AccountId}'},
+                        'amount': {'type': 'number', 'value': ''},
+                        'paymentMethod': {'type': 'string', 'value': 'CASH', 'isDefault': True},
+                        'currencyCode': {'type': 'string', 'value': 'CNY', 'isDefault': True}
+                    }
+                }
+            },
+            'rRsp': {
+                'resultCode': {'type': 'string', 'value': '0', 'validation': 'equals', 'isDefault': True},
+                'data': {
+                    'paymentId': {'type': 'string', 'value': '', 'validation': 'notEmpty', 'saveAs': ''},
+                    'newBalance': {'type': 'number', 'value': '', 'validation': 'noCare', 'saveAs': 'My_Balance'}
+                }
+            }
+        },
+        '@\\soap\\Adjustment.xml': {
+            'rReq': {
+                'header': {
+                    'version': {'type': 'string', 'value': '1.0', 'isDefault': True},
+                    'bizCode': {'type': 'string', 'value': 'ADJUSTMENT', 'isDefault': True},
+                    'transId': {'type': 'string', 'value': '${G.uuid()}', 'isDefault': True},
+                    'timestamp': {'type': 'string', 'value': '${G.now()}', 'isDefault': True}
+                },
+                'body': {
+                    'adjustmentInfo': {
+                        'accountId': {'type': 'string', 'value': '${My_AccountId}'},
+                        'amount': {'type': 'number', 'value': ''},
+                        'adjustType': {'type': 'string', 'value': 'CREDIT', 'isDefault': True},
+                        'reason': {'type': 'string', 'value': ''}
+                    }
+                }
+            },
+            'rRsp': {
+                'resultCode': {'type': 'string', 'value': '0', 'validation': 'equals', 'isDefault': True},
+                'data': {
+                    'adjustmentId': {'type': 'string', 'value': '', 'validation': 'notEmpty', 'saveAs': ''}
+                }
+            }
+        },
+        '@\\soap\\ChangeOffering.xml': {
+            'rReq': {
+                'header': {
+                    'version': {'type': 'string', 'value': '1.0', 'isDefault': True},
+                    'bizCode': {'type': 'string', 'value': 'CHANGE_OFFERING', 'isDefault': True},
+                    'transId': {'type': 'string', 'value': '${G.uuid()}', 'isDefault': True},
+                    'timestamp': {'type': 'string', 'value': '${G.now()}', 'isDefault': True}
+                },
+                'body': {
+                    'subscriberId': {'type': 'string', 'value': '${My_SubscriberId}'},
+                    'offeringChange': {
+                        'oldOfferingId': {'type': 'string', 'value': '${My_OldOfferingID}'},
+                        'newOfferingId': {'type': 'string', 'value': '${My_NewOfferingID}'},
+                        'effectiveDate': {'type': 'date', 'value': '${G.today()}', 'isDefault': True}
+                    }
+                }
+            },
+            'rRsp': {
+                'resultCode': {'type': 'string', 'value': '0', 'validation': 'equals', 'isDefault': True},
+                'resultMsg': {'type': 'string', 'value': 'Success', 'validation': 'noCare', 'isDefault': True}
+            }
+        }
+    },
+    'restful': {
+        '@\\rest\\GetUser.json': {
+            'rReq': {
+                'headers': {
+                    'Content-Type': {'type': 'string', 'value': 'application/json', 'isDefault': True},
+                    'Authorization': {'type': 'string', 'value': 'Bearer ${My_Token}'}
+                },
+                'queryParams': {
+                    'userId': {'type': 'string', 'value': '${My_UserId}'}
+                }
+            },
+            'rRsp': {
+                'code': {'type': 'number', 'value': 200, 'validation': 'equals', 'isDefault': True},
+                'data': {
+                    'id': {'type': 'string', 'value': '', 'validation': 'notEmpty', 'saveAs': ''},
+                    'name': {'type': 'string', 'value': '', 'validation': 'noCare'},
+                    'email': {'type': 'string', 'value': '', 'validation': 'noCare'}
+                }
+            }
+        },
+        '@\\rest\\CreateUser.json': {
+            'rReq': {
+                'headers': {
+                    'Content-Type': {'type': 'string', 'value': 'application/json', 'isDefault': True},
+                    'Authorization': {'type': 'string', 'value': 'Bearer ${My_Token}'}
+                },
+                'body': {
+                    'name': {'type': 'string', 'value': ''},
+                    'email': {'type': 'string', 'value': ''},
+                    'phone': {'type': 'string', 'value': ''},
+                    'role': {'type': 'string', 'value': 'user', 'isDefault': True}
+                }
+            },
+            'rRsp': {
+                'code': {'type': 'number', 'value': 201, 'validation': 'equals', 'isDefault': True},
+                'data': {
+                    'id': {'type': 'string', 'value': '', 'validation': 'notEmpty', 'saveAs': 'My_NewUserId'},
+                    'createdAt': {'type': 'date', 'value': '', 'validation': 'noCare'}
+                }
+            }
+        },
+        '@\\rest\\UpdateUser.json': {
+            'rReq': {
+                'headers': {
+                    'Content-Type': {'type': 'string', 'value': 'application/json', 'isDefault': True},
+                    'Authorization': {'type': 'string', 'value': 'Bearer ${My_Token}'}
+                },
+                'body': {
+                    'userId': {'type': 'string', 'value': '${My_UserId}'},
+                    'name': {'type': 'string', 'value': ''},
+                    'email': {'type': 'string', 'value': ''},
+                    'status': {'type': 'number', 'value': 1, 'isDefault': True}
+                }
+            },
+            'rRsp': {
+                'code': {'type': 'number', 'value': 200, 'validation': 'equals', 'isDefault': True},
+                'data': {
+                    'updatedAt': {'type': 'date', 'value': '', 'validation': 'noCare'}
+                }
+            }
+        },
+        '@\\rest\\DeleteUser.json': {
+            'rReq': {
+                'headers': {
+                    'Content-Type': {'type': 'string', 'value': 'application/json', 'isDefault': True},
+                    'Authorization': {'type': 'string', 'value': 'Bearer ${My_Token}'}
+                },
+                'queryParams': {
+                    'userId': {'type': 'string', 'value': '${My_UserId}'}
+                }
+            },
+            'rRsp': {
+                'code': {'type': 'number', 'value': 204, 'validation': 'equals', 'isDefault': True}
+            }
+        },
+        '@\\rest\\QueryList.json': {
+            'rReq': {
+                'headers': {
+                    'Content-Type': {'type': 'string', 'value': 'application/json', 'isDefault': True},
+                    'Authorization': {'type': 'string', 'value': 'Bearer ${My_Token}'}
+                },
+                'queryParams': {
+                    'page': {'type': 'number', 'value': 1, 'isDefault': True},
+                    'pageSize': {'type': 'number', 'value': 20, 'isDefault': True},
+                    'keyword': {'type': 'string', 'value': ''}
+                }
+            },
+            'rRsp': {
+                'code': {'type': 'number', 'value': 200, 'validation': 'equals', 'isDefault': True},
+                'data': {
+                    'total': {'type': 'number', 'value': '', 'validation': 'noCare', 'saveAs': 'My_TotalCount'},
+                    'list': {'type': 'string', 'value': '', 'validation': 'notEmpty'}
+                }
+            }
+        },
+        '@\\rest\\BatchCreate.json': {
+            'rReq': {
+                'headers': {
+                    'Content-Type': {'type': 'string', 'value': 'application/json', 'isDefault': True},
+                    'Authorization': {'type': 'string', 'value': 'Bearer ${My_Token}'}
+                },
+                'body': {
+                    'items': {'type': 'string', 'value': ''},
+                    'batchSize': {'type': 'number', 'value': 100, 'isDefault': True}
+                }
+            },
+            'rRsp': {
+                'code': {'type': 'number', 'value': 201, 'validation': 'equals', 'isDefault': True},
+                'data': {
+                    'successCount': {'type': 'number', 'value': '', 'validation': 'noCare', 'saveAs': 'My_SuccessCount'},
+                    'failedCount': {'type': 'number', 'value': '', 'validation': 'noCare'}
+                }
+            }
+        }
+    }
+}
+
 # 组件默认参数配置
 COMPONENT_DEFAULT_PARAMS = {
     "phone": {
@@ -323,7 +632,7 @@ PRESET_STEPS = [
 
 PRESET_COMPONENTS = [
     {"id": "comp_phone", "type": "phone", "name": "号码配置", "alias": "PhonesAssign", "icon": "phone", "description": "设置主被叫号码、呼叫区域和呼叫转移参数"},
-    {"id": "comp_variable", "type": "variable", "name": "设置变量", "alias": "TableSetVar", "icon": "variable", "description": "创建并设置变量值、设置请求参数、预置测试数据"},
+    {"id": "comp_variable", "type": "variable", "name": "设置变量", "alias": "TableSetVar", "icon": "variable", "description": "创建并设置变量���、设置请求参数、预置测试数据"},
     {"id": "comp_saveUserInfo", "type": "saveUserInfo", "name": "保存用户信息至变量", "alias": "SaveUserInfo", "icon": "save", "description": "创建用户结束后，获取用户信息，保存至环境变量"},
     {"id": "comp_moveForwardEfftime", "type": "moveForwardEfftime", "name": "时间前移", "alias": "MoveForwardEfftime", "icon": "clock-forward", "description": "时间前移"},
     {"id": "comp_delayTime", "type": "delayTime", "name": "时间延迟", "alias": "DelayTime", "icon": "clock-delay", "description": "执行延迟时间"},
@@ -553,6 +862,30 @@ def get_param_schemas():
     })
 
 
+@app.route('/api/template-params/<component_type>/<path:template_name>', methods=['GET'])
+def get_template_params(component_type, template_name):
+    """
+    接口5: 获取模板特定参数
+    根据组件类型和模板名称返回对应的请求/响应参数结构
+    """
+    # 将URL中的斜杠转换为反斜杠以匹配配置中的格式
+    template_key = '@\\' + template_name.replace('/', '\\')
+    
+    params = TEMPLATE_SPECIFIC_PARAMS.get(component_type, {}).get(template_key, None)
+    
+    if not params:
+        return jsonify({
+            "success": True,
+            "data": None,
+            "message": "使用默认参数"
+        })
+    
+    return jsonify({
+        "success": True,
+        "data": params
+    })
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """健康检查接口"""
@@ -565,11 +898,12 @@ if __name__ == '__main__':
     print("服务地址: http://localhost:5000")
     print("=" * 60)
     print("\n可用接口:")
-    print("  GET  /api/case-library-options  - 获取案例库选项")
-    print("  POST /api/search-history-cases  - 搜索历史用例")
-    print("  GET  /api/preset-data           - 获取预置步骤和组件")
-    print("  GET  /api/param-schemas         - 获取参数配置架构")
-    print("  GET  /health                    - 健康检查")
+    print("  GET  /api/case-library-options                    - 获取案例库选项")
+    print("  POST /api/search-history-cases                    - 搜索历史用例")
+    print("  GET  /api/preset-data                             - 获取预置步骤和组件")
+    print("  GET  /api/param-schemas                           - 获取参数配置架构")
+    print("  GET  /api/template-params/<type>/<template>       - 获取模板特定参数")
+    print("  GET  /health                                      - 健康检查")
     print("=" * 60 + "\n")
     
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -55,6 +55,14 @@ async function fetchParamSchemas() {
   return await apiRequest('/param-schemas')
 }
 
+// 接口5: 获取模板特定参数
+async function fetchTemplateParams(componentType, templateName) {
+  // 移除前缀 @\ 并转换反斜杠为斜杠用于URL
+  const cleanTemplate = templateName.replace(/^@\\/, '').replace(/\\/g, '/')
+  console.log('[v0] 正在获取模板参数:', componentType, cleanTemplate)
+  return await apiRequest(`/template-params/${componentType}/${cleanTemplate}`)
+}
+
 // ============ 全局变量存储从后端获取的数据 ============
 let caseLibraryOptions = []
 let presetSteps = []
@@ -732,7 +740,7 @@ function init() {
   })
 }
 
-// ============ 参数配置����能 ============
+// ============ 参数配置�����能 ============
 
 // 递归收集JSON树中的saveAs变量
 function collectSaveAsVariables(obj, componentName, variables, parentPath = '') {
@@ -941,18 +949,7 @@ function generateParamForm(componentType, params) {
   return
   }
   
-  // 检查是否有json-tree类型字段，如果有则添加全局"显示全部字段"开关
-  const hasJsonTree = paramSchema.some(f => f.type === 'json-tree')
-  if (hasJsonTree) {
-    container.insertAdjacentHTML('beforeend', `
-      <div class="param-global-toggle">
-        <label class="json-tree-toggle-label json-tree-toggle-global" title="切换显示全部字段或仅显示已填写的字段">
-          <input type="checkbox" class="json-tree-show-all-fields-global" checked>
-          <span class="json-tree-toggle-text">显示全部字段</span>
-        </label>
-      </div>
-    `)
-  }
+  // 全局"显示全部字段"开关现在已移至每个json-tree的actions区域内
   
   paramSchema.forEach(field => {
   const fieldHtml = generateParamField(field, params[field.name] || '')
@@ -1092,6 +1089,10 @@ function generateParamField(field, value) {
   <div class="param-field-header">
   <label class="param-field-label ${requiredClass}">${field.label}${requiredMark}</label>
   <div class="json-tree-actions">
+  <label class="json-tree-toggle-label" title="切换显示全部字段或仅显示已填写的字段">
+    <input type="checkbox" class="json-tree-show-all-fields" data-tree-name="${field.name}" checked>
+    <span class="json-tree-toggle-text">显示全部</span>
+  </label>
   <button type="button" class="json-tree-btn json-tree-expand-all" data-tree-name="${field.name}" title="展开全部">
   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
   <polyline points="15 3 21 3 21 9"></polyline>
@@ -1473,59 +1474,116 @@ function setNestedProperty(obj, path, property, value) {
 }
 
 function bindGlobalShowAllFieldsToggle() {
-  const globalToggle = elements.paramConfigContainer.querySelector('.json-tree-show-all-fields-global')
-  if (!globalToggle) return
-  
-  globalToggle.addEventListener('change', () => {
-    const showAllFields = globalToggle.checked
-    
-    // 遍历所有json树
-    elements.paramConfigContainer.querySelectorAll('[data-json-tree]').forEach(tree => {
-      tree.querySelectorAll('.json-tree-leaf').forEach(leaf => {
-        const isDefault = leaf.dataset.isDefault === 'true'
-        const input = leaf.querySelector('.json-tree-input')
-        const hasValue = input && input.value && input.value.trim() !== ''
-        
-        if (showAllFields) {
-          // 显示全部字段
-          leaf.style.display = 'block'
-        } else {
-          // 仅显示有值的字段或非默认字段
-          leaf.style.display = (hasValue || !isDefault) ? 'block' : 'none'
-        }
-      })
+  // 绑定每个json-tree的显示切换
+  elements.paramConfigContainer.querySelectorAll('.json-tree-show-all-fields').forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      const treeName = checkbox.dataset.treeName
+      const showAllFields = checkbox.checked
+      const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
+      
+      if (tree) {
+        tree.querySelectorAll('.json-tree-leaf').forEach(leaf => {
+          const isDefault = leaf.dataset.isDefault === 'true'
+          const input = leaf.querySelector('.json-tree-input')
+          const hasValue = input && input.value && input.value.trim() !== ''
+          
+          if (showAllFields) {
+            // 显示全部字段
+            leaf.style.display = 'block'
+          } else {
+            // 仅显示有值的字段或非默认字段
+            leaf.style.display = (hasValue || !isDefault) ? 'block' : 'none'
+          }
+        })
+      }
+      
+      // 更新切换文字
+      const toggleText = checkbox.parentElement.querySelector('.json-tree-toggle-text')
+      if (toggleText) {
+        toggleText.textContent = showAllFields ? '显示全部' : '仅已填写'
+      }
     })
-    
-    // 更新切换文字
-    const toggleText = globalToggle.parentElement.querySelector('.json-tree-toggle-text')
-    if (toggleText) {
-      toggleText.textContent = showAllFields ? '显示全部字段' : '仅显示已填写'
-    }
   })
 }
 
 function bindTemplateSelectEvents() {
   elements.paramConfigContainer.querySelectorAll('.param-template-select').forEach(select => {
-  const name = select.dataset.name
-  const customInput = elements.paramConfigContainer.querySelector(`[data-name="${name}-custom"]`)
+    const name = select.dataset.name
+    const customInput = elements.paramConfigContainer.querySelector(`[data-name="${name}-custom"]`)
+    
+    select.addEventListener('change', async () => {
+      if (select.value && customInput) {
+        customInput.value = ''
+      }
+      // 当选择模板时，根据模板动态加载对应的请求/响应参数
+      if (select.value && currentComponentType) {
+        await updateParamsForTemplate(select.value)
+      }
+    })
+    
+    if (customInput) {
+      customInput.addEventListener('input', async () => {
+        if (customInput.value) {
+          select.value = ''
+          // 自定义输入时也尝试加载参数（如果匹配到已知模板）
+          if (customInput.value.startsWith('@\\') && currentComponentType) {
+            await updateParamsForTemplate(customInput.value)
+          }
+        }
+      })
+    }
+  })
+}
+
+// 根据模板更新请求参数和响应验证字段
+async function updateParamsForTemplate(templateValue) {
+  try {
+    const templateParams = await fetchTemplateParams(currentComponentType, templateValue)
+    
+    if (templateParams) {
+      // 更新 rReq (请求参数) JSON树
+      if (templateParams.rReq) {
+        updateJsonTreeWithNewData('rReq', templateParams.rReq)
+      }
+      // 更新 rRsp (响应验证) JSON树
+      if (templateParams.rRsp) {
+        updateJsonTreeWithNewData('rRsp', templateParams.rRsp)
+      }
+      showNotification('参数已根据模板更新', 'success', 2000)
+    }
+  } catch (error) {
+    console.error('[v0] 获取模板参数失败:', error)
+    // 失败时不显示错误，使用默认参数
+  }
+}
+
+// 使用新数据更新指定的JSON树
+function updateJsonTreeWithNewData(fieldName, newData) {
+  if (!newData) return
   
-  select.addEventListener('change', () => {
-  if (select.value && customInput) {
-  customInput.value = ''
-  }
-  // 当选择模板时，可以在这里触发参数更新
-  // 目前保持简单实现，后续可扩展为根据模板动态加载参数
-  })
+  const container = elements.paramConfigContainer.querySelector(`[data-json-tree="${fieldName}"]`)
+  const hiddenInput = elements.paramConfigContainer.querySelector(`[data-name="${fieldName}"][data-json-tree-value]`)
+  const fieldWrapper = elements.paramConfigContainer.querySelector(`[data-field-name="${fieldName}"]`)
+  const isResponse = fieldWrapper?.dataset.isResponse === 'true'
   
-  if (customInput) {
-  customInput.addEventListener('input', () => {
-  if (customInput.value) {
-  select.value = ''
+  if (container && hiddenInput) {
+    // 重新生成JSON树HTML
+    const newTreeHtml = generateJsonTree(newData, fieldName, 0, '', isResponse)
+    container.innerHTML = newTreeHtml
+    hiddenInput.value = JSON.stringify(newData)
+    
+    // 重新绑定事件
+    bindJsonTreeEvents()
+    bindGlobalShowAllFieldsToggle()
+    
+    // 重新应用显示全部字段的切换状态
+    const showAllCheckbox = elements.paramConfigContainer.querySelector(`.json-tree-show-all-fields[data-tree-name="${fieldName}"]`)
+    if (showAllCheckbox) {
+      // 触发change事件以应用当前状态
+      showAllCheckbox.dispatchEvent(new Event('change'))
+    }
   }
-  })
-  }
-  })
-  }
+}
 
 function updateJsonTreeValue(treeName) {
   const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
@@ -4416,7 +4474,7 @@ function openComponentEdit(stepIndex, compIndex, section) {
   editingComponentIndex = compIndex
   editingSection = section
   selectedPresetComponent = null
-  isEditingHistoryCase = false  // 确保这是测试用例详情页面的编辑
+  isEditingHistoryCase = false  // 确保这是���试用例详情页面的编辑
   
   // 关键修复：重新绑定保存按钮为saveComponent
   elements.saveComponentBtn.onclick = saveComponent

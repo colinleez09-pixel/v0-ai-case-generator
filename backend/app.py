@@ -513,7 +513,7 @@ MOCK_SEARCH_RESULTS = [
         "steps": [
             {
                 "id": "hs4",
-                "name": "执行套餐变更操作",
+                "name": "执行套餐变更��作",
                 "expanded": False,
                 "components": [
                     {"id": "hc4", "type": "variable", "name": "设置变量 - 变更套餐参数", "params": {"vars": "My_NewOfferingID=${Offer_NewPlan.ID};My_EffectiveDate=${G.now()}"}},
@@ -886,6 +886,74 @@ def get_template_params(component_type, template_name):
     })
 
 
+@app.route('/api/generate-test-cases', methods=['POST'])
+def generate_test_cases():
+    """
+    接口6: 生成测试用例
+    请求参数: {
+        "templateFile": "用例模板文件名",
+        "apiVersion": "接口文档版本",
+        "historyCases": [...] // 可选，历史用例参考
+    }
+    返回格式: { "success": true, "data": [...] }
+    
+    注意：这是一个Mock实现，实际生产中应该调用AI服务生成用例
+    """
+    data = request.get_json() or {}
+    
+    # Mock生成的测试用例
+    generated_cases = [
+        {
+            "id": "TC001",
+            "name": "用户登录功能测试",
+            "preconditions": [
+                { 
+                    "id": "p1", 
+                    "name": "用户已注册", 
+                    "expanded": True, 
+                    "components": [
+                        {"id": "pc1", "type": "api", "name": "接口调用 - 检查用户", "params": {"method": "GET", "url": "/api/users/check"}}
+                    ] 
+                }
+            ],
+            "steps": [
+                { 
+                    "id": "s1", 
+                    "name": "打开登录页", 
+                    "expanded": True, 
+                    "components": [
+                        {"id": "c1", "type": "api", "name": "接口调用 - 获取登录页", "params": {"method": "GET", "url": "/login"}}
+                    ] 
+                },
+                { 
+                    "id": "s2", 
+                    "name": "输入凭证", 
+                    "expanded": True, 
+                    "components": [
+                        {"id": "c2", "type": "variable", "name": "设置变量 - 登录参数", "params": {"vars": "My_Username=testuser;My_Password=pass123"}},
+                        {"id": "c3", "type": "api", "name": "SOAP接口调用 - 登录验证", "params": {"rTpl": "@\\soap\\CreateSubscriber.xml", "url": "${Env.BMPAPP101.SoapUrl}", "tenantId": "${My_tenantId}"}}
+                    ] 
+                }
+            ],
+            "expectedResults": [
+                { 
+                    "id": "e1", 
+                    "name": "登录成功", 
+                    "expanded": True, 
+                    "components": [
+                        {"id": "ec1", "type": "database", "name": "数据库查询 - 验证登录状态", "params": {"dbUrl": "${Env.AdminDB}", "operation": "Select", "tableName": "USER_SESSION", "conditions": "USERNAME|${My_Username}", "timeout": "30"}}
+                    ] 
+                }
+            ]
+        }
+    ]
+    
+    return jsonify({
+        "success": True,
+        "data": generated_cases
+    })
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """健康检查接口"""
@@ -903,6 +971,7 @@ if __name__ == '__main__':
     print("  GET  /api/preset-data                             - 获取预置步骤和组件")
     print("  GET  /api/param-schemas                           - 获取参数配置架构")
     print("  GET  /api/template-params/<type>/<template>       - 获取模板特定参数")
+    print("  POST /api/generate-test-cases                     - 生成测试用例")
     print("  GET  /health                                      - 健康检查")
     print("=" * 60 + "\n")
     

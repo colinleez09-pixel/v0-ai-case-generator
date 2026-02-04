@@ -56,11 +56,24 @@ async function fetchParamSchemas() {
 }
 
 // 接口5: 获取模板特定参数
-async function fetchTemplateParams(componentType, templateName) {
+  async function fetchTemplateParams(componentType, templateName) {
   // 移除前缀 @\ 并转换反斜杠为斜杠用于URL
   const cleanTemplate = templateName.replace(/^@\\/, '').replace(/\\/g, '/')
   console.log('[v0] 正在获取模板参数:', componentType, cleanTemplate)
   return await apiRequest(`/template-params/${componentType}/${cleanTemplate}`)
+  }
+
+// 接口6: 生成测试用例
+async function fetchGenerateTestCases(templateFile, apiVersion, historyCases = []) {
+  console.log('[v0] 正在生成测试用例...', { templateFile, apiVersion, historyCases: historyCases.length })
+  return await apiRequest('/generate-test-cases', {
+    method: 'POST',
+    body: JSON.stringify({
+      templateFile,
+      apiVersion,
+      historyCases
+    })
+  })
 }
 
 // ============ 全局变量存储从后端获取的数据 ============
@@ -71,139 +84,7 @@ let componentDefaultParams = {} // 组件默认参数，从后端获取
 let currentSearchResults = [] // 存储当前搜索结果
 let paramSchemas = {} // 参数配置架构，从后端获取
 
-const defaultPresetSteps = [
-  {
-    id: "preset_1",
-    name: "打开登录页面",
-    description: "打开系统登录页面并等待加载完成",
-    components: [
-      { type: "api", name: "接口调用 - 获取登录页", params: { method: "GET", url: "/login" } },
-      { type: "assert", name: "断言 - 页面加载完成", params: { type: "visible", selector: "#login-form" } },
-    ],
-  },
-  {
-    id: "preset_2",
-    name: "输入用户名和密码",
-    description: "在登录表单中输入用户凭证",
-    components: [
-      { type: "input", name: "输入框 - 用户名", params: { selector: "#username", value: "testuser" } },
-      { type: "input", name: "输入框 - 密码", params: { selector: "#password", value: "password123" } },
-    ],
-  },
-  {
-    id: "preset_3",
-    name: "点击登录按钮",
-    description: "点击登录按钮提交表单",
-    components: [{ type: "button", name: "按钮 - 登录", params: { selector: "#login-btn", action: "click" } }],
-  },
-  {
-    id: "preset_4",
-    name: "验证登录成功",
-    description: "验证用户成功登录并跳转到首页",
-    components: [
-      { type: "assert", name: "断言 - URL跳转", params: { type: "url", expected: "/dashboard" } },
-      { type: "assert", name: "断言 - 欢迎信息", params: { type: "text", selector: ".welcome", contains: "欢迎" } },
-    ],
-  },
-  {
-    id: "preset_5",
-    name: "进入商品列表页",
-    description: "导航到商品列表页面",
-    components: [
-      { type: "button", name: "按钮 - 商品导航", params: { selector: "#nav-products", action: "click" } },
-      { type: "assert", name: "断言 - 页面标题", params: { type: "text", selector: "h1", expected: "商品列表" } },
-    ],
-  },
-  {
-    id: "preset_6",
-    name: "输入搜索关键词",
-    description: "在搜索框中输入搜索内容",
-    components: [
-      { type: "input", name: "输入框 - 搜索", params: { selector: "#search-input", value: "" } },
-      { type: "button", name: "按钮 - 搜索", params: { selector: "#search-btn", action: "click" } },
-    ],
-  },
-  {
-    id: "preset_7",
-    name: "选择商品规格",
-    description: "选择商品的颜色、尺寸等规格",
-    components: [
-      { type: "select", name: "下拉选择 - 颜色", params: { selector: "#color-select", value: "" } },
-      { type: "select", name: "下拉选择 - 尺寸", params: { selector: "#size-select", value: "" } },
-    ],
-  },
-  {
-    id: "preset_8",
-    name: "点击加入购物车",
-    description: "将商品添加到购物车",
-    components: [
-      { type: "button", name: "按钮 - 加入购物车", params: { selector: "#add-to-cart", action: "click" } },
-      { type: "assert", name: "断言 - 添加成功提示", params: { type: "visible", selector: ".toast-success" } },
-    ],
-  },
-  {
-    id: "preset_9",
-    name: "验证购物车数量",
-    description: "验证购物车商品数量已更新",
-    components: [
-      { type: "assert", name: "断言 - 购物车数量", params: { type: "text", selector: ".cart-count", expected: "1" } },
-    ],
-  },
-  {
-    id: "preset_10",
-    name: "提交订单",
-    description: "确认订单信息并提交",
-    components: [
-      { type: "button", name: "按钮 - 提交订单", params: { selector: "#submit-order", action: "click" } },
-      { type: "assert", name: "断言 - 订单成功", params: { type: "visible", selector: ".order-success" } },
-    ],
-  },
-  {
-    id: "preset_11",
-    name: "用户已注册账号",
-    description: "验证用户账号已存在于系统中",
-    components: [{ type: "api", name: "接口调用 - 检查用户存在", params: { method: "GET", url: "/api/users/check" } }],
-  },
-  {
-    id: "preset_12",
-    name: "系统登录功能正常可用",
-    description: "验证登录服务可正常访问",
-    components: [{ type: "assert", name: "断言 - 登录页面可访问", params: { type: "status", expected: 200 } }],
-  },
-  {
-    id: "preset_13",
-    name: "商品库存充足",
-    description: "验证商品有足够库存",
-    components: [{ type: "api", name: "接口调用 - 检查库存", params: { method: "GET", url: "/api/products/stock" } }],
-  },
-  {
-    id: "preset_14",
-    name: "成功跳转到目标页面",
-    description: "验证页面跳转成功",
-    components: [{ type: "assert", name: "断言 - URL验证", params: { type: "url", expected: "" } }],
-  },
-  {
-    id: "preset_15",
-    name: "页面显示正确信息",
-    description: "验证页面显示预期的内容",
-    components: [{ type: "assert", name: "断言 - 文本验证", params: { type: "text", selector: "", contains: "" } }],
-  },
-]
-
-// 临时兼容：保留一个默认的presetComponents用于页面初始化（将被API数据覆盖）
-const defaultPresetComponents = [
-  { id: "comp_phone", type: "phone", name: "号码配置", alias: "PhonesAssign", icon: "phone", description: "设置主被叫号码、呼叫区域和呼叫转移参数" },
-  { id: "comp_variable", type: "variable", name: "设置变量", alias: "TableSetVar", icon: "variable", description: "创建并设置变量值、设置请求参数、预置测试数据" },
-  { id: "comp_saveUserInfo", type: "saveUserInfo", name: "保存用户信息至变量", alias: "SaveUserInfo", icon: "save", description: "创建用户结束后，获取用户信息，保存至环境变量" },
-  { id: "comp_moveForwardEfftime", type: "moveForwardEfftime", name: "时间前移", alias: "MoveForwardEfftime", icon: "clock-forward", description: "时间前移" },
-  { id: "comp_delayTime", type: "delayTime", name: "时间延迟", alias: "DelayTime", icon: "clock-delay", description: "执行延迟时间" },
-  { id: "comp_database", type: "database", name: "数据库查询", alias: "DataBaseQuery", icon: "database", description: "执行数据库查询数据的操作，查询某个表的某个字段值" },
-  { id: "comp_api", type: "api", name: "Soap请求", alias: "SoapClient", icon: "globe", description: "发送Soap请求到指定接口，并校验接口返回数据" },
-  { id: "comp_comment", type: "comment", name: "步骤注释", alias: "comment", icon: "message-square", description: "对自动化用例步骤进行注释" },
-  { id: "comp_restful", type: "restful", name: "Rest请求", alias: "RestfulClient", icon: "send", description: "发送Rest请求，到接口，接收返回消息并对返回消息进行校验" },
-  { id: "comp_shell", type: "shell", name: "Shell执行", alias: "ShellExec", icon: "terminal", description: "执行Shell命令" },
-  { id: "comp_task", type: "task", name: "任务触发", alias: "TaskTrigger", icon: "play-circle", description: "触发定时任务执行" },
-]
+// 预置步骤和组件数据将从后端API获取，不再使用前端默认数据
 
 // ============ 历史用例搜索相关变量 ============
 
@@ -213,211 +94,9 @@ const searchMethodOptions = [
   { value: "semantic", label: "按语义" }
 ]
 
-// 版本列表
-const versionList = [
-  { code: "CBS-SW25C00B888", name: "CBS系统版本 SW25C00B888" },
-  { code: "CBS-SW25C00B777", name: "CBS系统版本 SW25C00B777" },
-  { code: "CBS-SW25C00B666", name: "CBS系统版本 SW25C00B666" },
-  { code: "BMP-V10.2", name: "BMP平台版本 V10.2" },
-  { code: "BMP-V10.1", name: "BMP平台版本 V10.1" }
-]
+// 版本列表（保留用于API版本选择，后续可从后端获取）
 
-// Mock数据
-const mockTestCases = [
-  {
-    id: "TC001",
-    name: "用户登录功能测试",
-    preconditions: [
-      { 
-        id: "p1", 
-        name: "用户已注册", 
-        expanded: false, 
-        components: [
-          { id: "pc1", type: "api", name: "接口调用 - 检查用户", params: { method: "GET", url: "/api/users/check" } }
-        ] 
-      }
-    ],
-    steps: [
-      { 
-        id: "s1", 
-        name: "打开登录页", 
-        expanded: true, 
-        components: [
-          { id: "c1", type: "api", name: "接口调用 - 获取登录页", params: { method: "GET", url: "/login" } }
-        ] 
-      },
-      { 
-        id: "s2", 
-        name: "输入凭证", 
-        expanded: false, 
-        components: [
-          { id: "c2", type: "input", name: "输入框 - 用户名", params: { selector: "#username", value: "testuser" } },
-          { id: "c3", type: "input", name: "输入框 - 密码", params: { selector: "#password", value: "pass123" } }
-        ] 
-      }
-    ],
-    expectedResults: [
-      { 
-        id: "e1", 
-        name: "登录成功", 
-        expanded: false, 
-        components: [
-          { id: "ec1", type: "assert", name: "断言 - URL跳转", params: { type: "url", expected: "/dashboard" } }
-        ] 
-      }
-    ]
-  }
-]
-
-// 搜索结果mock数据
-const mockSearchResults = [
-  {
-    id: "HTC001",
-    name: "月度账单生成及计费验证",
-    preconditions: [
-      { 
-        id: "hp1", 
-        name: "初始化用户账户数据", 
-        expanded: false, 
-        components: [
-          { id: "hpc1", type: "database", name: "数据库查询 - 检查账户状态", params: { dbUrl: "${Env.AdminDB}", sql: "select * from USER_ACCOUNT where status=1", timeout: "30" } },
-          { id: "hpc2", type: "variable", name: "设置变量 - 账户参数", params: { vars: "My_AcctId=123456;My_BillCycle=202501" } }
-        ] 
-      }
-    ],
-    steps: [
-      { 
-        id: "hs1", 
-        name: "执行账单计算任务", 
-        expanded: true, 
-        components: [
-          { id: "hc1", type: "task", name: "任务触发 - 月度账单生成", params: { planType: "triggeringTaskPlan", planName: "Monthly_Bill_Generate", status: "f", timeout: "300" } },
-          { id: "hc2", type: "delayTime", name: "时间延迟 - 等待任务完成", params: { delaytimes: "60" } }
-        ] 
-      },
-      { 
-        id: "hs2", 
-        name: "验证账单数据准确性", 
-        expanded: false, 
-        components: [
-          { id: "hc3", type: "database", name: "数据库查询 - 查询账单记录", params: { dbUrl: "${Env.DCDB204}", tableName: "DC_INVOICE_DETAIL", operation: "Select", conditions: "ACCT_ID|${My_AcctId}", timeout: "30" } }
-        ] 
-      }
-    ],
-    expectedResults: [
-      { 
-        id: "he1", 
-        name: "账单生成成功且金额正确", 
-        expanded: false, 
-        components: [
-          { id: "hec1", type: "database", name: "数据库查询 - 验证账单金额", params: { dbUrl: "${Env.DCDB204}", sql: "select count(*) from DC_INVOICE_DETAIL where ACCT_ID=${My_AcctId} and BILL_CYCLE='${My_BillCycle}'", checkAmount: "1" } }
-        ] 
-      }
-    ]
-  },
-  {
-    id: "HTC002",
-    name: "用户套餐变更及生效验证",
-    preconditions: [
-      { 
-        id: "hp2", 
-        name: "创建测试用户", 
-        expanded: false, 
-        components: [
-          { id: "hpc3", type: "phone", name: "号码配置 - 分配号码", params: { callingId: "Native_HD_C1A1_Onnet", callingVisit: "C1A1", calledId: "Native_HD_C1A1_Onnet", calledVisit: "C1A1" } },
-          { id: "hpc4", type: "api", name: "SOAP接口调用 - 创建用户", params: { rTpl: "@\\soap\\CreateSubscriber.xml", url: "${Env.BMPAPP101.SoapUrl}", tenantId: "${My_tenantId}" } }
-        ] 
-      }
-    ],
-    steps: [
-      { 
-        id: "hs4", 
-        name: "执行套餐变更操作", 
-        expanded: false, 
-        components: [
-          { id: "hc4", type: "variable", name: "设置变量 - 变更套餐参数", params: { vars: "My_NewOfferingID=${Offer_NewPlan.ID};My_EffectiveDate=${G.now()}" } },
-          { id: "hc5", type: "api", name: "SOAP接口调用 - 套餐变更", params: { rTpl: "@\\soap\\ModifyOffering.xml", url: "${Env.BMPAPP101.SoapUrl}", tenantId: "${My_tenantId}" } }
-        ] 
-      },
-      { 
-        id: "hs5", 
-        name: "触发套餐生效处理", 
-        expanded: false, 
-        components: [
-          { id: "hc6", type: "moveForwardEfftime", name: "时间前移 - 生效时间", params: { number: "${My_SubIdentity}", forwardhours: "24" } }
-        ] 
-      }
-    ],
-    expectedResults: [
-      { 
-        id: "he2", 
-        name: "套餐变更成功并已生效", 
-        expanded: false, 
-        components: [
-          { id: "hec2", type: "database", name: "数据库查询 - 验证套餐状态", params: { dbUrl: "${Env.AdminDB}", tableName: "SUBSCRIBER_OFFERING", operation: "Select", conditions: "SUB_ID|${calling.Sub.SUB_ID}", vars: "OFFERING_ID", timeout: "30" } },
-          { id: "hec3", type: "shell", name: "Shell执行 - 验证日志", params: { url: "${Env.BMPAPP101.sshurl}", cmd: "grep 'ModifyOffering success' bmp_debug.log |wc -l", shellChecks: "1" } }
-        ] 
-      }
-    ]
-  },
-  {
-    id: "HTC003",
-    name: "欠费停机及复机流程测试",
-    preconditions: [
-      { 
-        id: "hp3", 
-        name: "创建欠费用户", 
-        expanded: false, 
-        components: [
-          { id: "hpc5", type: "phone", name: "号码配置 - 分配号码", params: { callingId: "Native_HD_C1A1_Onnet", callingVisit: "C1A1", calledId: "Native_HD_C1A1_Onnet", calledVisit: "C1A1" } },
-          { id: "hpc6", type: "variable", name: "设置变量 - 开户参数", params: { vars: "My_PrimaryOfferingID=${Offer_ATP_Primary_POS.ID};My_Charge=1000000;My_tenantId=0" } },
-          { id: "hpc7", type: "api", name: "SOAP接口调用 - 创建用户", params: { rTpl: "@\\soap\\CreateSubscriber.xml", url: "${Env.BMPAPP101.SoapUrl}", tenantId: "${My_tenantId}" } }
-        ] 
-      },
-      { 
-        id: "hp4", 
-        name: "调整账户为欠费状态", 
-        expanded: false, 
-        components: [
-          { id: "hpc8", type: "variable", name: "设置变量 - 欠费调整参数", params: { vars: "My_AdjOpType=1;My_AdjType=2;My_AdjAmt=5000000;My_AdjCurrencyID=1049" } },
-          { id: "hpc9", type: "api", name: "SOAP接口调用 - 欠费调整", params: { rTpl: "@\\soap\\Adjustment.xml", url: "${Env.BMPAPP101.SoapUrl}", tenantId: "${My_tenantId}" } }
-        ] 
-      }
-    ],
-    steps: [
-      { 
-        id: "hs6", 
-        name: "执行停机处理", 
-        expanded: false, 
-        components: [
-          { id: "hc7", type: "task", name: "任务触发 - 欠费停机任务", params: { planType: "triggeringTaskPlan", planName: "Suspend_Debit_User", status: "f", tenantID: "${My_tenantId}", timeout: "120" } },
-          { id: "hc8", type: "delayTime", name: "时间延迟 - 等待停机完成", params: { delaytimes: "30" } }
-        ] 
-      },
-      { 
-        id: "hs7", 
-        name: "充值并执行复机", 
-        expanded: false, 
-        components: [
-          { id: "hc9", type: "variable", name: "设置变量 - 充值参数", params: { vars: "My_PaymentAmt=10000000;My_PaymentMethod=1" } },
-          { id: "hc10", type: "api", name: "SOAP接口调用 - 账户充值", params: { rTpl: "@\\soap\\Payment.xml", url: "${Env.BMPAPP101.SoapUrl}", tenantId: "${My_tenantId}" } },
-          { id: "hc11", type: "task", name: "任务触发 - 复机任务", params: { planType: "triggeringTaskPlan", planName: "Resume_User_Service", status: "f", tenantID: "${My_tenantId}", timeout: "120" } }
-        ] 
-      }
-    ],
-    expectedResults: [
-      { 
-        id: "he3", 
-        name: "用户成功复机且服务正常", 
-        expanded: false, 
-        components: [
-          { id: "hec4", type: "database", name: "数据库查询 - 验证用户状态", params: { dbUrl: "${Env.AdminDB}", tableName: "SUBSCRIBER", operation: "Select", conditions: "SUB_ID|${calling.Sub.SUB_ID}", vars: "STATUS", timeout: "30" } },
-          { id: "hec5", type: "comment", name: "步骤注释 - 验证完成", params: { content: "用户状态应为Active(1),余额大于0" } }
-        ] 
-      }
-    ]
-  }
-]
+// Mock数据已移至后端，通过API获取
 
 // 已选择的历史用例
 let selectedHistoryCases = []
@@ -631,24 +310,25 @@ function initElements() {
 async function loadBackendData() {
   console.log('[v0] 开始加载后端数据...')
   try {
-    // 加载预置步骤和组件数据
-    const presetData = await fetchPresetData()
-    presetSteps = presetData.steps || defaultPresetSteps
-    presetComponents = presetData.components || defaultPresetComponents
-    componentDefaultParams = presetData.componentDefaultParams || {}
-    console.log('[v0] 预置数据加载成功:', { 
-      steps: presetSteps.length, 
-      components: presetComponents.length,
-      componentParams: Object.keys(componentDefaultParams).length 
-    })
-    
-    // 案例库选项会在用户打开筛选面板时按需加载
+  // 加载预置步骤和组件数据
+  const presetData = await fetchPresetData()
+  presetSteps = presetData.steps || []
+  presetComponents = presetData.components || []
+  componentDefaultParams = presetData.componentDefaultParams || {}
+  console.log('[v0] 预置数据加载成功:', {
+  steps: presetSteps.length,
+  components: presetComponents.length,
+  componentParams: Object.keys(componentDefaultParams).length
+  })
+  
+  // 案例库选项会在用户打开筛选面板时按需加载
   } catch (error) {
-    console.error('[v0] 加载后端数据失败，使用默认数据:', error)
-    // 使用默认数据
-    presetSteps = defaultPresetSteps
-    presetComponents = defaultPresetComponents
-    componentDefaultParams = {} // 如果加载失败，使用空对象
+  console.error('[v0] 加载后端数据失败:', error)
+  showNotification('加载后端数据失败，请检查后端服务是否启动', 'error', 5000)
+  // 使用空数组作为备用
+  presetSteps = []
+  presetComponents = []
+  componentDefaultParams = {}
   }
 }
 
@@ -916,6 +596,18 @@ function closeParamConfig() {
 function saveParamConfig() {
   console.log('[v0] 保存参数配置')
   
+  // 校验必填字段
+  const validationResult = validateRequiredFields()
+  if (!validationResult.valid) {
+    showNotification(validationResult.message, "error", 3000)
+    // 聚焦到第一个错误字段
+    if (validationResult.firstErrorField) {
+      validationResult.firstErrorField.focus()
+      validationResult.firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    return
+  }
+  
   // 收集表单数据
   const formData = collectParamFormData()
   console.log('[v0] 收集到的参数:', formData)
@@ -928,6 +620,88 @@ function saveParamConfig() {
   
   closeParamConfig()
   showNotification("参数配置已保存", "success", 2000)
+}
+
+// 校验必填字段
+function validateRequiredFields() {
+  const container = elements.paramConfigContainer
+  const requiredLabels = container.querySelectorAll('.param-field-label.required')
+  const emptyFields = []
+  let firstErrorField = null
+  
+  requiredLabels.forEach(label => {
+    const fieldContainer = label.closest('.param-field')
+    if (!fieldContainer) return
+    
+    // 获取字段名
+    const fieldName = label.textContent.replace(' *', '').trim()
+    
+    // 检查普通输入框
+    const input = fieldContainer.querySelector('.param-field-input, .param-field-textarea')
+    if (input && !input.value.trim()) {
+      emptyFields.push(fieldName)
+      input.classList.add('field-error')
+      if (!firstErrorField) firstErrorField = input
+      return
+    } else if (input) {
+      input.classList.remove('field-error')
+    }
+    
+    // 检查 combo box
+    const comboInput = fieldContainer.querySelector('.param-combo-input')
+    if (comboInput && !comboInput.value.trim()) {
+      emptyFields.push(fieldName)
+      comboInput.classList.add('field-error')
+      if (!firstErrorField) firstErrorField = comboInput
+      return
+    } else if (comboInput) {
+      comboInput.classList.remove('field-error')
+    }
+    
+    // 检查模板选择
+    const templateSelect = fieldContainer.querySelector('.param-template-select')
+    const templateCustom = fieldContainer.querySelector('.param-template-custom')
+    if (templateSelect) {
+      const hasValue = templateSelect.value || (templateCustom && templateCustom.value.trim())
+      if (!hasValue) {
+        emptyFields.push(fieldName)
+        templateSelect.classList.add('field-error')
+        if (!firstErrorField) firstErrorField = templateSelect
+        return
+      } else {
+        templateSelect.classList.remove('field-error')
+      }
+    }
+    
+    // 检查变量列表
+    const variablesList = fieldContainer.querySelector('[data-variables-list]')
+    if (variablesList) {
+      const hasValidVar = Array.from(variablesList.querySelectorAll('.param-variable-item')).some(item => {
+        const nameInput = item.querySelector('[data-var-name]')
+        const valueInput = item.querySelector('[data-var-value]')
+        return nameInput && nameInput.value.trim() && valueInput && valueInput.value.trim()
+      })
+      if (!hasValidVar) {
+        emptyFields.push(fieldName)
+        const firstInput = variablesList.querySelector('[data-var-name]')
+        if (firstInput) {
+          firstInput.classList.add('field-error')
+          if (!firstErrorField) firstErrorField = firstInput
+        }
+        return
+      }
+    }
+  })
+  
+  if (emptyFields.length > 0) {
+    return {
+      valid: false,
+      message: `请填写必填字段: ${emptyFields.join(', ')}`,
+      firstErrorField
+    }
+  }
+  
+  return { valid: true }
 }
 
 function generateParamForm(componentType, params) {
@@ -1161,25 +935,25 @@ function generateJsonTree(data, treeName, level, parentPath = '', isResponse = f
     const isLeaf = node && node.type
     const isDefault = node && node.isDefault
     
-    if (isExpandable) {
-      // 可展开的节点（嵌套对象）
-      html += `
-        <div class="json-tree-node json-tree-branch" data-path="${currentPath}" data-level="${level}">
-          <div class="json-tree-node-header" data-toggle-node>
-            <span class="json-tree-toggle">
-              <svg class="json-tree-arrow" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </span>
-            <span class="json-tree-key">${key}</span>
-            <span class="json-tree-type-badge">object</span>
-            <span class="json-tree-count">${Object.keys(node).length} 项</span>
-          </div>
-          <div class="json-tree-children" style="display: block;">
-            ${generateJsonTree(node, treeName, level + 1, currentPath, isResponse)}
-          </div>
-        </div>
-      `
+if (isExpandable) {
+  // 可展开的节点（嵌套对象）- 默认展开状态，添加expanded类使箭头正确显示
+  html += `
+    <div class="json-tree-node json-tree-branch expanded" data-path="${currentPath}" data-level="${level}">
+      <div class="json-tree-node-header" data-toggle-node>
+        <span class="json-tree-toggle">
+          <svg class="json-tree-arrow" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </span>
+        <span class="json-tree-key">${key}</span>
+        <span class="json-tree-type-badge">object</span>
+        <span class="json-tree-count">${Object.keys(node).length} 项</span>
+      </div>
+      <div class="json-tree-children">
+        ${generateJsonTree(node, treeName, level + 1, currentPath, isResponse)}
+      </div>
+    </div>
+  `
     } else if (isLeaf) {
       // 叶子节点（带类型的值）
       const inputHtml = generateJsonTreeInput(node, currentPath, treeName)
@@ -1306,17 +1080,12 @@ function bindJsonTreeEvents() {
     header.addEventListener('click', (e) => {
       e.stopPropagation()
       const node = header.closest('.json-tree-branch')
-      const children = node.querySelector('.json-tree-children')
-      const arrow = header.querySelector('.json-tree-arrow')
       
-      if (children.style.display === 'none') {
-        children.style.display = 'block'
-        arrow.style.transform = 'rotate(90deg)'
-        node.classList.add('expanded')
-      } else {
-        children.style.display = 'none'
-        arrow.style.transform = 'rotate(0deg)'
+      // Use class toggle for smooth CSS animation
+      if (node.classList.contains('expanded')) {
         node.classList.remove('expanded')
+      } else {
+        node.classList.add('expanded')
       }
     })
   })
@@ -1340,38 +1109,28 @@ function bindJsonTreeEvents() {
     if (btn.dataset.eventsBound === 'true') return
     btn.dataset.eventsBound = 'true'
     
-    btn.addEventListener('click', () => {
-      const treeName = btn.dataset.treeName
-      const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
-      tree.querySelectorAll('.json-tree-children').forEach(child => {
-        child.style.display = 'block'
-      })
-      tree.querySelectorAll('.json-tree-arrow').forEach(arrow => {
-        arrow.style.transform = 'rotate(90deg)'
-      })
-      tree.querySelectorAll('.json-tree-branch').forEach(node => {
-        node.classList.add('expanded')
-      })
-    })
+btn.addEventListener('click', () => {
+  const treeName = btn.dataset.treeName
+  const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
+  // Use class toggle for smooth CSS animation
+  tree.querySelectorAll('.json-tree-branch').forEach(node => {
+  node.classList.add('expanded')
+  })
+  })
   })
   
   // 折叠全部按钮 - 防止重复绑定
   elements.paramConfigContainer.querySelectorAll('.json-tree-collapse-all').forEach(btn => {
-    if (btn.dataset.eventsBound === 'true') return
-    btn.dataset.eventsBound = 'true'
-    
-    btn.addEventListener('click', () => {
-      const treeName = btn.dataset.treeName
-      const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
-      tree.querySelectorAll('.json-tree-children').forEach(child => {
-        child.style.display = 'none'
-      })
-      tree.querySelectorAll('.json-tree-arrow').forEach(arrow => {
-        arrow.style.transform = 'rotate(0deg)'
-      })
-      tree.querySelectorAll('.json-tree-branch').forEach(node => {
-        node.classList.remove('expanded')
-      })
+  if (btn.dataset.eventsBound === 'true') return
+  btn.dataset.eventsBound = 'true'
+  
+  btn.addEventListener('click', () => {
+  const treeName = btn.dataset.treeName
+  const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
+  // Use class toggle for smooth CSS animation
+  tree.querySelectorAll('.json-tree-branch').forEach(node => {
+  node.classList.remove('expanded')
+  })
     })
   })
   
@@ -2149,18 +1908,37 @@ async function startGeneratingCases() {
   const progressFill = document.getElementById(progressFillId)
   const progressPercent = document.getElementById(progressPercentId)
 
-  for (let i = 0; i <= 100; i += 10) {
-    await new Promise((resolve) => setTimeout(resolve, 300))
+  // 模拟进度动画
+  for (let i = 0; i <= 80; i += 10) {
+    await new Promise((resolve) => setTimeout(resolve, 200))
     if (progressFill && progressPercent) {
       progressFill.style.width = i + "%"
       progressPercent.textContent = i + "%"
     }
   }
 
-  // 加载mock数据作为生成结果
-  testCases = JSON.parse(JSON.stringify(mockTestCases))
-
-  addTestCaseCard()
+  try {
+    // 从后端API获取生成的测试用例
+    const apiVersionSelect = document.getElementById('apiVersionSelect')
+    const caseFileName = elements.caseFileName?.textContent || 'template.xml'
+    const apiVersion = apiVersionSelect?.value || 'v2.0'
+    
+    const generatedCases = await fetchGenerateTestCases(caseFileName, apiVersion, selectedHistoryCases)
+    testCases = generatedCases
+    
+    // 完成进度
+    if (progressFill && progressPercent) {
+      progressFill.style.width = "100%"
+      progressPercent.textContent = "100%"
+    }
+    
+    addTestCaseCard()
+  } catch (error) {
+    console.error('[v0] 生成测试用例失败:', error)
+    showNotification('生成测试用例失败，请检查后端服务是否启动', 'error', 5000)
+    // 使用空数组作为备用
+    testCases = []
+  }
 
   // 显示操作按钮
   showActionButtons()
@@ -2838,7 +2616,7 @@ function openStepEdit(stepIndex, section) {
 
   const titleMap = {
     preconditions: stepIndex !== null ? "编辑预置条件" : "添加预置条件",
-    steps: stepIndex !== null ? "编辑测试步骤" : "添加测试步骤",
+    steps: stepIndex !== null ? "编辑测试���骤" : "添加测试步骤",
     expectedResults: stepIndex !== null ? "编辑预期结果" : "添加预期结果",
   }
 
@@ -3033,7 +2811,7 @@ function handleSearchInput(e) {
   if (value.slice(-1) === "/") {
     // 移除输入框中的 "/"
     elements.historySearchInput.value = value.slice(0, -1)
-    // 显示筛选面板
+    // ���示筛选面板
     renderFilterPanel()
     elements.filterPanel.classList.add("show")
   } else {
@@ -3294,8 +3072,8 @@ function updateSelectedCasesPreview() {
 }
 
 // 只读查看用例详情
-function openHistoryCaseDetail(caseId) {
-  const tc = mockSearchResults.find(t => t.id === caseId) || tempSelectedCases.find(t => t.id === caseId)
+  function openHistoryCaseDetail(caseId) {
+  const tc = currentSearchResults.find(t => t.id === caseId) || tempSelectedCases.find(t => t.id === caseId)
   if (!tc) return
   
   historyCasesForEdit = [JSON.parse(JSON.stringify(tc))]
@@ -4249,7 +4027,7 @@ function openComponentEditForHistoryEdit(stepIndex, compIndex, section) {
     elements.componentTypeSelect.value = presetComp ? presetComp.name : comp.type
     elements.componentNameInput.value = comp.name
     elements.componentParamsInput.value = JSON.stringify(comp.params, null, 2)
-    // 更新参数摘要显示
+    // 更新参数摘要��示
     updateParamSummary(comp.params)
   } else {
     elements.componentEditTitle.textContent = "添加组件"
@@ -4625,9 +4403,7 @@ async function startApp() {
 
 startApp()
 
-// 初始化presetSteps为默认值
-presetSteps = defaultPresetSteps
-presetComponents = defaultPresetComponents
+// 预置数据将通过loadBackendData从后端加载
 
 // 在init后初始化历史搜索功能
 initHistorySearchElements()

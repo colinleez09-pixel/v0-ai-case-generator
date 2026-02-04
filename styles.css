@@ -3545,3 +3545,19 @@ body {
     justify-content: flex-start;
   }
 }
+
+/* 必填字段验证错误样式 */
+.field-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.field-error:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* 必填标签的星号样式 */
+.param-field-label.required::after {
+  color: #ef4444;
+}

@@ -3090,7 +3090,7 @@ body {
 }
 
 .json-tree-arrow {
-  transition: transform 0.2s;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: #64748b;
 }
 
@@ -3144,7 +3144,23 @@ body {
   margin-left: 24px;
   padding-left: 12px;
   border-left: 2px solid #e5e7eb;
+  /* Animation properties for smooth collapse */
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.25s ease-out, 
+              margin-top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.json-tree-branch.expanded > .json-tree-children {
+  max-height: 8000px; /* Large enough to accommodate deep nested content */
+  opacity: 1;
   margin-top: 4px;
+  transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s ease-in 0.05s, 
+              margin-top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .json-tree-leaf {

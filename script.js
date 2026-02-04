@@ -949,7 +949,7 @@ if (isExpandable) {
         <span class="json-tree-type-badge">object</span>
         <span class="json-tree-count">${Object.keys(node).length} 项</span>
       </div>
-      <div class="json-tree-children" style="display: block;">
+      <div class="json-tree-children">
         ${generateJsonTree(node, treeName, level + 1, currentPath, isResponse)}
       </div>
     </div>
@@ -1080,17 +1080,12 @@ function bindJsonTreeEvents() {
     header.addEventListener('click', (e) => {
       e.stopPropagation()
       const node = header.closest('.json-tree-branch')
-      const children = node.querySelector('.json-tree-children')
-      const arrow = header.querySelector('.json-tree-arrow')
       
-      if (children.style.display === 'none') {
-        children.style.display = 'block'
-        arrow.style.transform = 'rotate(90deg)'
-        node.classList.add('expanded')
-      } else {
-        children.style.display = 'none'
-        arrow.style.transform = 'rotate(0deg)'
+      // Use class toggle for smooth CSS animation
+      if (node.classList.contains('expanded')) {
         node.classList.remove('expanded')
+      } else {
+        node.classList.add('expanded')
       }
     })
   })
@@ -1114,38 +1109,28 @@ function bindJsonTreeEvents() {
     if (btn.dataset.eventsBound === 'true') return
     btn.dataset.eventsBound = 'true'
     
-    btn.addEventListener('click', () => {
-      const treeName = btn.dataset.treeName
-      const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
-      tree.querySelectorAll('.json-tree-children').forEach(child => {
-        child.style.display = 'block'
-      })
-      tree.querySelectorAll('.json-tree-arrow').forEach(arrow => {
-        arrow.style.transform = 'rotate(90deg)'
-      })
-      tree.querySelectorAll('.json-tree-branch').forEach(node => {
-        node.classList.add('expanded')
-      })
-    })
+btn.addEventListener('click', () => {
+  const treeName = btn.dataset.treeName
+  const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
+  // Use class toggle for smooth CSS animation
+  tree.querySelectorAll('.json-tree-branch').forEach(node => {
+  node.classList.add('expanded')
+  })
+  })
   })
   
   // 折叠全部按钮 - 防止重复绑定
   elements.paramConfigContainer.querySelectorAll('.json-tree-collapse-all').forEach(btn => {
-    if (btn.dataset.eventsBound === 'true') return
-    btn.dataset.eventsBound = 'true'
-    
-    btn.addEventListener('click', () => {
-      const treeName = btn.dataset.treeName
-      const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
-      tree.querySelectorAll('.json-tree-children').forEach(child => {
-        child.style.display = 'none'
-      })
-      tree.querySelectorAll('.json-tree-arrow').forEach(arrow => {
-        arrow.style.transform = 'rotate(0deg)'
-      })
-      tree.querySelectorAll('.json-tree-branch').forEach(node => {
-        node.classList.remove('expanded')
-      })
+  if (btn.dataset.eventsBound === 'true') return
+  btn.dataset.eventsBound = 'true'
+  
+  btn.addEventListener('click', () => {
+  const treeName = btn.dataset.treeName
+  const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
+  // Use class toggle for smooth CSS animation
+  tree.querySelectorAll('.json-tree-branch').forEach(node => {
+  node.classList.remove('expanded')
+  })
     })
   })
   
@@ -4042,7 +4027,7 @@ function openComponentEditForHistoryEdit(stepIndex, compIndex, section) {
     elements.componentTypeSelect.value = presetComp ? presetComp.name : comp.type
     elements.componentNameInput.value = comp.name
     elements.componentParamsInput.value = JSON.stringify(comp.params, null, 2)
-    // 更新参数摘要显示
+    // 更新参数摘要��示
     updateParamSummary(comp.params)
   } else {
     elements.componentEditTitle.textContent = "添加组件"

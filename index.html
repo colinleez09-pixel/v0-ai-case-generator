@@ -596,13 +596,24 @@
             <div class="steps-list" id="historyEditExpectedResultList"></div>
           </div>
         </div>
-          <!-- 用例模板面板（仅当当前用例被设为模板时显示） -->
-          <div class="case-template-panel" id="caseTemplatePanel" style="display: none;">
+          <!-- 用例模板面板（持久显示，勾选"设为模板"后一直显示） -->
+          <div class="case-template-panel" id="caseTemplatePanel">
             <div class="template-panel-header">
               <h3>用例模板</h3>
-              <span class="template-panel-hint">基于选中用例生成的模板</span>
+              <span class="template-panel-hint">可编辑的模板</span>
             </div>
-            <div class="template-panel-content">
+            <!-- 空状态提示 -->
+            <div class="template-empty-state" id="templateEmptyState">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+              </svg>
+              <p>请在左侧用例详情中勾选"设为模板"</p>
+              <p style="font-size: 12px; margin-top: 4px;">勾选后可在此编辑模板内容</p>
+            </div>
+            <div class="template-panel-content" id="templatePanelContent" style="display: none;">
               <div class="detail-header">
                 <h2 id="templateDetailTitle">模板名称</h2>
                 <p id="templateDetailId">模板 ID: --</p>

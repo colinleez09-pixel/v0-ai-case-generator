@@ -2026,6 +2026,16 @@ body {
 .history-edit-modal {
   max-width: 1400px;
   width: 95vw;
+  height: 85vh;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-edit-modal .modal-body {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 
 #historyCaseEditOverlay {
@@ -2036,13 +2046,20 @@ body {
 .history-edit-body {
   display: flex;
   gap: 20px;
+  height: 100%;
 }
 
 .history-edit-left-panel {
   display: flex;
   flex-direction: column;
-  width: 220px;
+  width: 240px;
+  min-width: 240px;
   flex-shrink: 0;
+  background: #fafbfc;
+  border: 1px solid #e5e8eb;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-y: auto;
 }
 
 .history-edit-right-panel {
@@ -2050,20 +2067,28 @@ body {
   display: flex;
   gap: 20px;
   min-width: 0;
+  height: 100%;
 }
 
 .history-edit-right-panel .case-detail-panel {
   flex: 1;
-  min-width: 0;
+  min-width: 350px;
+  max-width: 50%;
   border-right: none;
+  background: #fff;
+  border: 1px solid #e5e8eb;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-y: auto;
 }
 
 /* 用例模板面板样式 */
 .case-template-panel {
   flex: 1;
-  min-width: 0;
+  min-width: 350px;
+  max-width: 50%;
   background: #f8fafb;
-  border: 1px solid #e5e8eb;
+  border: 1px solid #d4edda;
   border-radius: 8px;
   padding: 16px;
   overflow-y: auto;
@@ -2075,7 +2100,7 @@ body {
   gap: 12px;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e8eb;
+  border-bottom: 2px solid #27ae60;
 }
 
 .template-panel-header h3 {
@@ -2088,6 +2113,9 @@ body {
 .template-panel-hint {
   font-size: 12px;
   color: #95a5a6;
+  background: #e8f5e9;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .template-panel-content {
@@ -2096,16 +2124,21 @@ body {
 
 .template-panel-content .detail-header {
   margin-bottom: 16px;
+  padding: 12px;
+  background: #e8f5e9;
+  border-radius: 6px;
 }
 
 .template-panel-content .detail-header h2 {
   font-size: 15px;
   color: #2c3e50;
+  margin-bottom: 4px;
 }
 
 .template-panel-content .detail-header p {
   font-size: 12px;
   color: #7f8c8d;
+  margin: 0;
 }
 
 .selected-cases-list-section {
@@ -2118,6 +2151,8 @@ body {
   font-weight: 600;
   color: #5d6d7e;
   margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #3498db;
 }
 
 /* 移除旧的左侧模板区域样式，保留兼容 */
@@ -3796,4 +3831,65 @@ body {
 
 .case-template-panel .add-btn {
   margin-top: 8px;
+}
+
+/* 用例详情面板样式优化 */
+.history-edit-right-panel .case-detail-panel .detail-header {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #e3f2fd;
+  border-radius: 6px;
+  border-bottom: 2px solid #3498db;
+}
+
+.history-edit-right-panel .case-detail-panel .detail-header h2 {
+  font-size: 15px;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.history-edit-right-panel .case-detail-panel .detail-header p {
+  font-size: 12px;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+/* 空状态提示样式 */
+.template-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #95a5a6;
+  text-align: center;
+}
+
+.template-empty-state svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.template-empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 防止布局抖动 */
+.history-edit-modal .modal-body,
+.history-edit-body,
+.history-edit-left-panel,
+.history-edit-right-panel,
+.case-detail-panel,
+.case-template-panel {
+  transition: none;
+}
+
+/* 确保面板内容不会导致尺寸变化 */
+.history-edit-right-panel .case-detail-panel,
+.case-template-panel {
+  overflow-y: auto;
+  overflow-x: hidden;
 }

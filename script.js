@@ -1654,7 +1654,7 @@ function bindAutocompleteEvents() {
         return
       }
       
-      // 检查 ${ 后是否有 }
+      // 检查 ${ 后是否��� }
       const afterDollarBrace = value.substring(lastDollarBrace)
       const closingBrace = afterDollarBrace.indexOf('}')
       
@@ -1664,7 +1664,7 @@ function bindAutocompleteEvents() {
         return
       }
       
-      // 提取搜索文本（${ 和��标之间的内容）
+      // 提取搜索文本（${ 和���标之间的内容）
       const searchText = beforeCursor.substring(lastDollarBrace + 2)
       lastSearchText = searchText
       lastCursorPos = cursorPos
@@ -3011,7 +3011,7 @@ function updateInputPadding() {
 async function performHistorySearch() {
   const searchText = elements.historySearchInput.value.trim()
   if (!searchText) {
-    showNotification("请输入搜索内容", "error", 2000)
+    showNotification("请输入��索内容", "error", 2000)
     return
   }
   
@@ -3257,17 +3257,38 @@ function renderHistorySectionReadonly(items, container, sectionType) {
 }
 
 function copyToClipboard(text, successMsg) {
-  navigator.clipboard.writeText(text).then(() => {
-    showNotification(successMsg || "已复制到剪贴板", "success", 2000)
-  }).catch(() => {
+  // Check if navigator.clipboard is available (requires HTTPS or localhost)
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    navigator.clipboard.writeText(text).then(() => {
+      showNotification(successMsg || "已复制到剪贴板", "success", 2000)
+    }).catch(() => {
+      fallbackCopyToClipboard(text, successMsg)
+    })
+  } else {
+    fallbackCopyToClipboard(text, successMsg)
+  }
+}
+
+function fallbackCopyToClipboard(text, successMsg) {
+  try {
     const textarea = document.createElement("textarea")
     textarea.value = text
+    textarea.style.position = "fixed"
+    textarea.style.left = "-9999px"
+    textarea.style.top = "0"
     document.body.appendChild(textarea)
+    textarea.focus()
     textarea.select()
-    document.execCommand("copy")
+    const successful = document.execCommand("copy")
     document.body.removeChild(textarea)
-    showNotification(successMsg || "已复制到剪贴板", "success", 2000)
-  })
+    if (successful) {
+      showNotification(successMsg || "已复制到剪贴板", "success", 2000)
+    } else {
+      showNotification("复制失败，请手动复制", "error", 2000)
+    }
+  } catch (err) {
+    showNotification("复制失败，请手动复制", "error", 2000)
+  }
 }
 
 function saveHistorySelection() {
@@ -3368,6 +3389,8 @@ function initHistoryCaseEditElements() {
   
   // 新增：右侧模板面板元素
   elements.caseTemplatePanel = document.getElementById("caseTemplatePanel")
+  elements.templateEmptyState = document.getElementById("templateEmptyState")
+  elements.templatePanelContent = document.getElementById("templatePanelContent")
   elements.templateDetailTitle = document.getElementById("templateDetailTitle")
   elements.templateDetailId = document.getElementById("templateDetailId")
   elements.templatePreconditionList = document.getElementById("templatePreconditionList")
@@ -3516,24 +3539,14 @@ function renderHistoryEditCaseList() {
   elements.historyEditCaseList.querySelectorAll(".case-item-with-actions").forEach(item => {
     item.addEventListener("click", () => {
       const newIndex = parseInt(item.dataset.index)
-      const previousIndex = currentEditCaseIndex
       currentEditCaseIndex = newIndex
       
       // 更新用例详情
       renderHistoryEditCaseList()
       renderHistoryEditDetail()
       
-      // 根据需求：仅当切换到被勾选了"设为模板"的用例时，才更新模板面板
-      // 如果新选中的用例是模板源，显示模板面板
-      if (newIndex === templateCaseIndex) {
-        renderTemplatePanelIfNeeded()
-      } else if (previousIndex === templateCaseIndex) {
-        // 如果从模板源用例切换到其他用例，隐藏模板面板
-        if (elements.caseTemplatePanel) {
-          elements.caseTemplatePanel.style.display = "none"
-        }
-      }
-      // 如果切换前后都不是模板源用例，模板面板保持不变（不刷新）
+      // 模板面板保持持久显示：一旦选择了模板，切换用例不会隐藏模板面板
+      // 模板面板始终显示（如果有模板的话），不受用例切换影响
     })
   })
 }
@@ -3595,13 +3608,19 @@ function renderHistoryEditDetail() {
   renderHistoryEditSectionReadonly(tc.expectedResults, elements.historyEditExpectedResultList, "expectedResults")
 }
 
-// 新增：渲染右侧模板面板（仅当当前用例被设为模板时显示）
+// 新增：渲染右侧模板面板（持久显示：一旦有模板，始终显示，不受用例切换影响）
 function renderTemplatePanelIfNeeded() {
   if (!elements.caseTemplatePanel) return
   
-  // 只有当当前选中的用例被勾选为模板时，才显示模板面板
-  if (currentEditCaseIndex === templateCaseIndex && caseTemplate) {
-    elements.caseTemplatePanel.style.display = "block"
+  // 只要有模板数据，就显示模板内容（不依赖当前选中的用例）
+  if (caseTemplate && templateCaseIndex >= 0) {
+    // 隐藏空状态提示，显示模板内容
+    if (elements.templateEmptyState) {
+      elements.templateEmptyState.style.display = "none"
+    }
+    if (elements.templatePanelContent) {
+      elements.templatePanelContent.style.display = "block"
+    }
     
     // 更新模板面板内容
     if (elements.templateDetailTitle) {
@@ -3622,8 +3641,13 @@ function renderTemplatePanelIfNeeded() {
       renderTemplateSectionEditable(caseTemplate.expectedResults, elements.templateExpectedResultList, "expectedResults")
     }
   } else {
-    // 当前用例未被设为模板，隐藏模板面板
-    elements.caseTemplatePanel.style.display = "none"
+    // 没有模板数据，显示空状态提示
+    if (elements.templateEmptyState) {
+      elements.templateEmptyState.style.display = "flex"
+    }
+    if (elements.templatePanelContent) {
+      elements.templatePanelContent.style.display = "none"
+    }
   }
 }
 

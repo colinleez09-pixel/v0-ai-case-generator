@@ -1664,7 +1664,7 @@ function bindAutocompleteEvents() {
         return
       }
       
-      // 提取搜索文本（${ 和光标之间的内容）
+      // 提取搜索文本（${ 和��标之间的内容）
       const searchText = beforeCursor.substring(lastDollarBrace + 2)
       lastSearchText = searchText
       lastCursorPos = cursorPos
@@ -3209,7 +3209,7 @@ function renderHistoryCaseDetailReadonly() {
 
 function renderHistorySectionReadonly(items, container, sectionType) {
   if (!items || items.length === 0) {
-    const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步骤" : "预期结果"
+    const hintText = sectionType === "preconditions" ? "预置条���" : sectionType === "steps" ? "测试步骤" : "预期结果"
     container.innerHTML = `<p class="empty-hint">暂无${hintText}</p>`
     return
   }
@@ -3365,6 +3365,17 @@ function initHistoryCaseEditElements() {
   elements.historyEditCaseNameInput = document.getElementById("historyEditCaseNameInput")
   elements.editCaseNameBtn = document.getElementById("editCaseNameBtn")
   elements.saveCaseNameBtn = document.getElementById("saveCaseNameBtn")
+  
+  // 新增：右侧模板面板元素
+  elements.caseTemplatePanel = document.getElementById("caseTemplatePanel")
+  elements.templateDetailTitle = document.getElementById("templateDetailTitle")
+  elements.templateDetailId = document.getElementById("templateDetailId")
+  elements.templatePreconditionList = document.getElementById("templatePreconditionList")
+  elements.templateStepsList = document.getElementById("templateStepsList")
+  elements.templateExpectedResultList = document.getElementById("templateExpectedResultList")
+  elements.addTemplatePreconditionBtn = document.getElementById("addTemplatePreconditionBtn")
+  elements.addTemplateStepBtn = document.getElementById("addTemplateStepBtn")
+  elements.addTemplateExpectedResultBtn = document.getElementById("addTemplateExpectedResultBtn")
 }
 
 function bindHistoryCaseEditEvents() {
@@ -3386,7 +3397,7 @@ function bindHistoryCaseEditEvents() {
   // 模板复选框
   elements.setAsTemplateCheckbox.addEventListener("change", handleSetAsTemplate)
   
-  // 添加按钮（仅模板模式可用）
+  // 添加按钮（仅模板模式可用）- 保留旧按钮事件绑定以兼容
   elements.addHistoryEditPreconditionBtn.addEventListener("click", () => {
     if (isViewingTemplate) openStepEditForHistoryEdit(null, "preconditions")
   })
@@ -3396,6 +3407,23 @@ function bindHistoryCaseEditEvents() {
   elements.addHistoryEditExpectedResultBtn.addEventListener("click", () => {
     if (isViewingTemplate) openStepEditForHistoryEdit(null, "expectedResults")
   })
+  
+  // 新增：右侧模板面板的添加按钮
+  if (elements.addTemplatePreconditionBtn) {
+    elements.addTemplatePreconditionBtn.addEventListener("click", () => {
+      openStepEditForHistoryEdit(null, "preconditions", true)
+    })
+  }
+  if (elements.addTemplateStepBtn) {
+    elements.addTemplateStepBtn.addEventListener("click", () => {
+      openStepEditForHistoryEdit(null, "steps", true)
+    })
+  }
+  if (elements.addTemplateExpectedResultBtn) {
+    elements.addTemplateExpectedResultBtn.addEventListener("click", () => {
+      openStepEditForHistoryEdit(null, "expectedResults", true)
+    })
+  }
   
   // 复制整个section按钮
   elements.copyPreconditionsBtn.addEventListener("click", () => copySectionToClipboard("preconditions"))
@@ -3425,24 +3453,24 @@ function openHistoryCaseEditModal() {
   historyCasesForEdit = JSON.parse(JSON.stringify(tempSelectedCases))
   historyCasesBackup = JSON.parse(JSON.stringify(historyCasesForEdit))
   
-  // 如果有已保存的模板和索引，使用它们；否���默认第一个
+  // 如果有已保存的模板和索引，使用它们；否则默认第一个
   if (savedCaseTemplate && savedTemplateIndex !== null && savedTemplateIndex < historyCasesForEdit.length) {
     templateCaseIndex = savedTemplateIndex
     caseTemplate = JSON.parse(JSON.stringify(savedCaseTemplate))
   } else {
-    templateCaseIndex = 0
-    caseTemplate = JSON.parse(JSON.stringify(historyCasesForEdit[0]))
-    caseTemplate.id = "TEMPLATE_" + Date.now()
-    caseTemplate.name = caseTemplate.name + " (模板)"
+    // 默认不设置模板，需要用户手动勾选
+    templateCaseIndex = -1
+    caseTemplate = null
   }
   
-  // 需求3：默认选择用例模板进行展示
-  currentEditCaseIndex = templateCaseIndex
-  isViewingTemplate = true
+  // 默认选择第一个用例进行展示（不是模板模式）
+  currentEditCaseIndex = 0
+  isViewingTemplate = false
   
   elements.historyCaseEditOverlay.classList.add("active")
   renderHistoryEditCaseList()
   renderHistoryEditDetail()
+  renderTemplatePanelIfNeeded()
 }
 
 function closeHistoryCaseEditModal() {
@@ -3472,7 +3500,7 @@ function saveHistoryCaseEdit() {
 function renderHistoryEditCaseList() {
   // 渲染已选用例列表
   elements.historyEditCaseList.innerHTML = historyCasesForEdit.map((tc, index) => `
-    <div class="case-item-with-actions ${!isViewingTemplate && index === currentEditCaseIndex ? "active" : ""}" data-index="${index}">
+    <div class="case-item-with-actions ${index === currentEditCaseIndex ? "active" : ""}" data-index="${index}">
       <div class="case-item-info">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -3484,18 +3512,30 @@ function renderHistoryEditCaseList() {
     </div>
   `).join("")
   
-  // 绑定点���事���
+  // 绑定点击事件
   elements.historyEditCaseList.querySelectorAll(".case-item-with-actions").forEach(item => {
     item.addEventListener("click", () => {
-      currentEditCaseIndex = parseInt(item.dataset.index)
-      isViewingTemplate = false
+      const newIndex = parseInt(item.dataset.index)
+      const previousIndex = currentEditCaseIndex
+      currentEditCaseIndex = newIndex
+      
+      // 更新用例详情
       renderHistoryEditCaseList()
       renderHistoryEditDetail()
+      
+      // 根据需求：仅当切换到被勾选了"设为模板"的用例时，才更新模板面板
+      // 如果新选中的用例是模板源，显示模板面板
+      if (newIndex === templateCaseIndex) {
+        renderTemplatePanelIfNeeded()
+      } else if (previousIndex === templateCaseIndex) {
+        // 如果从模板源用例切换到其他用例，隐藏模板面板
+        if (elements.caseTemplatePanel) {
+          elements.caseTemplatePanel.style.display = "none"
+        }
+      }
+      // 如果切换前后都不是模板源用例，模板面板保持不变（不刷新）
     })
   })
-  
-  // 渲染模板显示
-  renderTemplateDisplay()
 }
 
 function renderTemplateDisplay() {
@@ -3522,49 +3562,347 @@ function renderTemplateDisplay() {
 }
 
 function renderHistoryEditDetail() {
-  let tc
-  if (isViewingTemplate) {
-    tc = caseTemplate
-  } else {
-    tc = historyCasesForEdit[currentEditCaseIndex]
-  }
+  // 新布局：左侧用例详情始终显示当前选中的用例（只读模式）
+  const tc = historyCasesForEdit[currentEditCaseIndex]
   
   if (!tc) return
   
   elements.historyEditDetailTitle.textContent = tc.name
   elements.historyEditDetailId.textContent = `用例 ID: ${tc.id}`
   
-  // 显示/隐藏��例名称编辑按钮（仅在查看模板时显示）
-  elements.editCaseNameBtn.style.display = isViewingTemplate ? "inline-flex" : "none"
+  // 隐藏用例名称编辑按钮（仅在模板面板中使用）
+  elements.editCaseNameBtn.style.display = "none"
   elements.historyEditCaseNameInput.style.display = "none"
   elements.saveCaseNameBtn.style.display = "none"
   
-  // 显示/隐藏设为模板复选框（仅在查看已选用例时显示）
-  elements.templateCheckboxLabel.style.display = isViewingTemplate ? "none" : "flex"
+  // 显示设为模板复选框
+  elements.templateCheckboxLabel.style.display = "flex"
   elements.setAsTemplateCheckbox.checked = currentEditCaseIndex === templateCaseIndex
   
-  // 显示/隐藏添加按钮（仅在模板模式显示）
-  const showAddBtns = isViewingTemplate ? "inline-flex" : "none"
-  elements.addHistoryEditPreconditionBtn.style.display = showAddBtns
-  elements.addHistoryEditStepBtn.style.display = showAddBtns
-  elements.addHistoryEditExpectedResultBtn.style.display = showAddBtns
+  // 隐藏添加按钮（只读模式不需要）
+  elements.addHistoryEditPreconditionBtn.style.display = "none"
+  elements.addHistoryEditStepBtn.style.display = "none"
+  elements.addHistoryEditExpectedResultBtn.style.display = "none"
   
   // 隐藏section级别的复制按钮
   elements.copyPreconditionsBtn.style.display = "none"
   elements.copyStepsBtn.style.display = "none"
   elements.copyExpectedResultsBtn.style.display = "none"
   
-  if (isViewingTemplate) {
-    // 模板模式：可编辑，复制按钮是复制步骤/组件
-    renderHistoryEditSectionEditable(tc.preconditions, elements.historyEditPreconditionList, "preconditions")
-    renderHistoryEditSectionEditable(tc.steps, elements.historyEditStepsList, "steps")
-    renderHistoryEditSectionEditable(tc.expectedResults, elements.historyEditExpectedResultList, "expectedResults")
+  // 用例详情始终为只读模式，带复制到剪贴板的按钮
+  renderHistoryEditSectionReadonly(tc.preconditions, elements.historyEditPreconditionList, "preconditions")
+  renderHistoryEditSectionReadonly(tc.steps, elements.historyEditStepsList, "steps")
+  renderHistoryEditSectionReadonly(tc.expectedResults, elements.historyEditExpectedResultList, "expectedResults")
+}
+
+// 新增：渲染右侧模板面板（仅当当前用例被设为模板时显示）
+function renderTemplatePanelIfNeeded() {
+  if (!elements.caseTemplatePanel) return
+  
+  // 只有当当前选中的用例被勾选为模板时，才显示模板面板
+  if (currentEditCaseIndex === templateCaseIndex && caseTemplate) {
+    elements.caseTemplatePanel.style.display = "block"
+    
+    // 更新模板面板内容
+    if (elements.templateDetailTitle) {
+      elements.templateDetailTitle.textContent = caseTemplate.name
+    }
+    if (elements.templateDetailId) {
+      elements.templateDetailId.textContent = `模板 ID: ${caseTemplate.id}`
+    }
+    
+    // 渲染模板的各个section（可编辑模式）
+    if (elements.templatePreconditionList) {
+      renderTemplateSectionEditable(caseTemplate.preconditions, elements.templatePreconditionList, "preconditions")
+    }
+    if (elements.templateStepsList) {
+      renderTemplateSectionEditable(caseTemplate.steps, elements.templateStepsList, "steps")
+    }
+    if (elements.templateExpectedResultList) {
+      renderTemplateSectionEditable(caseTemplate.expectedResults, elements.templateExpectedResultList, "expectedResults")
+    }
   } else {
-    // 只读模式：带复制到剪贴板的按钮
-    renderHistoryEditSectionReadonly(tc.preconditions, elements.historyEditPreconditionList, "preconditions")
-    renderHistoryEditSectionReadonly(tc.steps, elements.historyEditStepsList, "steps")
-    renderHistoryEditSectionReadonly(tc.expectedResults, elements.historyEditExpectedResultList, "expectedResults")
+    // 当前用例未被设为模板，隐藏模板面板
+    elements.caseTemplatePanel.style.display = "none"
   }
+}
+
+// 新增：渲染模板section（可编辑模式）- 复用原有的editable渲染逻辑
+function renderTemplateSectionEditable(items, container, sectionType) {
+  if (!items || items.length === 0) {
+    const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步骤" : "预期结果"
+    container.innerHTML = `<p class="empty-hint">暂无${hintText}，点击上方按钮添加</p>`
+    return
+  }
+  
+  container.innerHTML = items.map((item, stepIndex) => `
+    <div class="step-item" draggable="true" data-type="${sectionType}" data-section="${sectionType}" data-step-index="${stepIndex}">
+      <div class="step-header">
+        <div class="drag-handle">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="5" r="1"></circle>
+            <circle cx="9" cy="12" r="1"></circle>
+            <circle cx="9" cy="19" r="1"></circle>
+            <circle cx="15" cy="5" r="1"></circle>
+            <circle cx="15" cy="12" r="1"></circle>
+            <circle cx="15" cy="19" r="1"></circle>
+          </svg>
+        </div>
+        <button class="expand-btn template-expand-btn ${item.expanded ? "expanded" : ""}" data-section="${sectionType}" data-step-index="${stepIndex}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <span class="step-number">${stepIndex + 1}</span>
+        <span class="step-name">${item.name}</span>
+        <div class="step-actions">
+          <button class="icon-btn template-duplicate-step-btn" data-section="${sectionType}" data-step-index="${stepIndex}" title="复制步骤">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+          <button class="icon-btn template-edit-step-btn" data-section="${sectionType}" data-step-index="${stepIndex}" title="编辑">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button class="icon-btn danger template-delete-step-btn" data-section="${sectionType}" data-step-index="${stepIndex}" title="删除">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="step-content ${item.expanded ? "expanded" : ""}">
+        <div class="components-list">
+          ${item.components && item.components.length > 0
+            ? item.components.map((comp, compIndex) => `
+              <div class="component-item" draggable="true" data-type="component" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}">
+                <div class="drag-handle">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="9" cy="5" r="1"></circle>
+                    <circle cx="9" cy="12" r="1"></circle>
+                    <circle cx="9" cy="19" r="1"></circle>
+                    <circle cx="15" cy="5" r="1"></circle>
+                    <circle cx="15" cy="12" r="1"></circle>
+                    <circle cx="15" cy="19" r="1"></circle>
+                  </svg>
+                </div>
+                <span class="component-number">${compIndex + 1}</span>
+                <div class="component-info">
+                  <div class="component-name">${comp.name}</div>
+                  <pre class="component-params">${JSON.stringify(comp.params, null, 2)}</pre>
+                </div>
+                <div class="component-actions">
+                  <button class="icon-btn template-duplicate-comp-btn" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}" title="复制组件">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  </button>
+                  <button class="icon-btn template-edit-comp-btn" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}" title="编辑">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                  <button class="icon-btn danger template-delete-comp-btn" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}" title="删除">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            `).join("")
+            : '<p class="empty-hint" style="font-size: 12px; padding: 8px;">暂无组件</p>'
+          }
+        </div>
+        <button class="add-btn template-add-comp-btn" data-section="${sectionType}" data-step-index="${stepIndex}">+ 添加组件</button>
+      </div>
+    </div>
+  `).join("")
+  
+  bindTemplateSectionEvents(container, sectionType)
+}
+
+// 新增：绑定模板面板的事件
+function bindTemplateSectionEvents(container, sectionType) {
+  // 拖动排序
+  let draggedElement = null
+  let draggedType = null
+  let draggedSection = null
+  let draggedStepIndex = null
+  let draggedCompIndex = null
+  
+  container.querySelectorAll('[draggable="true"]').forEach(item => {
+    item.addEventListener("dragstart", (e) => {
+      e.stopPropagation()
+      draggedElement = e.target.closest('[draggable="true"]')
+      draggedType = draggedElement.dataset.type
+      draggedSection = draggedElement.dataset.section
+      draggedStepIndex = draggedElement.dataset.stepIndex ? parseInt(draggedElement.dataset.stepIndex) : null
+      draggedCompIndex = draggedElement.dataset.compIndex ? parseInt(draggedElement.dataset.compIndex) : null
+      
+      draggedElement.style.opacity = "0.5"
+    })
+    
+    item.addEventListener("dragend", (e) => {
+      if (draggedElement) {
+        draggedElement.style.opacity = ""
+      }
+      container.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"))
+    })
+    
+    item.addEventListener("dragover", (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+    })
+    
+    item.addEventListener("dragenter", (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const dropTarget = e.target.closest('[draggable="true"]')
+      if (dropTarget && dropTarget !== draggedElement) {
+        dropTarget.classList.add("drag-over")
+      }
+    })
+    
+    item.addEventListener("dragleave", (e) => {
+      e.stopPropagation()
+      const dropTarget = e.target.closest('[draggable="true"]')
+      if (dropTarget) {
+        dropTarget.classList.remove("drag-over")
+      }
+    })
+    
+    item.addEventListener("drop", (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      if (!draggedElement) return
+      
+      const dropTarget = e.target.closest('[draggable="true"]')
+      if (!dropTarget || dropTarget === draggedElement) return
+      
+      const dropType = dropTarget.dataset.type
+      const dropSection = dropTarget.dataset.section
+      const dropStepIndex = dropTarget.dataset.stepIndex ? parseInt(dropTarget.dataset.stepIndex) : null
+      const dropCompIndex = dropTarget.dataset.compIndex ? parseInt(dropTarget.dataset.compIndex) : null
+      
+      // 步骤拖动
+      if (draggedType !== "component" && dropType !== "component") {
+        if (draggedSection === dropSection) {
+          const items = caseTemplate[draggedSection]
+          const [removed] = items.splice(draggedStepIndex, 1)
+          const newIndex = draggedStepIndex < dropStepIndex ? dropStepIndex - 1 : dropStepIndex
+          items.splice(newIndex, 0, removed)
+          renderTemplatePanelIfNeeded()
+        }
+      }
+      // 组件拖动
+      else if (draggedType === "component" && dropType === "component") {
+        if (draggedSection === dropSection && draggedStepIndex === dropStepIndex) {
+          const components = caseTemplate[draggedSection][draggedStepIndex].components
+          const [removed] = components.splice(draggedCompIndex, 1)
+          const newIndex = draggedCompIndex < dropCompIndex ? dropCompIndex - 1 : dropCompIndex
+          components.splice(newIndex, 0, removed)
+          renderTemplatePanelIfNeeded()
+        }
+      }
+      
+      dropTarget.classList.remove("drag-over")
+    })
+  })
+  
+  // 展开/折叠
+  container.querySelectorAll(".template-expand-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const stepIndex = parseInt(btn.dataset.stepIndex)
+      caseTemplate[sectionType][stepIndex].expanded = !caseTemplate[sectionType][stepIndex].expanded
+      renderTemplatePanelIfNeeded()
+    })
+  })
+
+  // 复制步骤（复制一份相同的）
+  container.querySelectorAll(".template-duplicate-step-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const stepIndex = parseInt(btn.dataset.stepIndex)
+      const originalStep = caseTemplate[sectionType][stepIndex]
+      const duplicatedStep = JSON.parse(JSON.stringify(originalStep))
+      duplicatedStep.id = "item" + Date.now()
+      caseTemplate[sectionType].splice(stepIndex + 1, 0, duplicatedStep)
+      renderTemplatePanelIfNeeded()
+    })
+  })
+
+  // 编辑步骤
+  container.querySelectorAll(".template-edit-step-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      openStepEditForHistoryEdit(parseInt(btn.dataset.stepIndex), btn.dataset.section, true)
+    })
+  })
+
+  // 删除步骤
+  container.querySelectorAll(".template-delete-step-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const stepIndex = parseInt(btn.dataset.stepIndex)
+      caseTemplate[sectionType].splice(stepIndex, 1)
+      renderTemplatePanelIfNeeded()
+    })
+  })
+
+  // 复制组件（复制一份相同的）
+  container.querySelectorAll(".template-duplicate-comp-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const stepIndex = parseInt(btn.dataset.stepIndex)
+      const compIndex = parseInt(btn.dataset.compIndex)
+      const originalComp = caseTemplate[sectionType][stepIndex].components[compIndex]
+      const duplicatedComp = JSON.parse(JSON.stringify(originalComp))
+      duplicatedComp.id = "comp" + Date.now()
+      caseTemplate[sectionType][stepIndex].components.splice(compIndex + 1, 0, duplicatedComp)
+      renderTemplatePanelIfNeeded()
+    })
+  })
+
+  // 编辑组件
+  container.querySelectorAll(".template-edit-comp-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      openComponentEditForHistoryEdit(
+        parseInt(btn.dataset.stepIndex),
+        parseInt(btn.dataset.compIndex),
+        btn.dataset.section,
+        true
+      )
+    })
+  })
+
+  // 删除组件
+  container.querySelectorAll(".template-delete-comp-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const stepIndex = parseInt(btn.dataset.stepIndex)
+      const compIndex = parseInt(btn.dataset.compIndex)
+      caseTemplate[sectionType][stepIndex].components.splice(compIndex, 1)
+      renderTemplatePanelIfNeeded()
+    })
+  })
+
+  // 添加组件
+  container.querySelectorAll(".template-add-comp-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      openComponentEditForHistoryEdit(
+        parseInt(btn.dataset.stepIndex),
+        null,
+        btn.dataset.section,
+        true
+      )
+    })
+  })
 }
 
 function renderHistoryEditSectionReadonly(items, container, sectionType) {
@@ -3816,7 +4154,7 @@ function bindEditableSectionEvents(container, sectionType) {
           const [removed] = items.splice(draggedStepIndex, 1)
           const newIndex = draggedStepIndex < dropStepIndex ? dropStepIndex - 1 : dropStepIndex
           items.splice(newIndex, 0, removed)
-          renderHistoryEditDetail()
+          renderTemplatePanelIfNeeded()
         }
       }
       // 组件拖动
@@ -3826,7 +4164,7 @@ function bindEditableSectionEvents(container, sectionType) {
           const [removed] = components.splice(draggedCompIndex, 1)
           const newIndex = draggedCompIndex < dropCompIndex ? dropCompIndex - 1 : dropCompIndex
           components.splice(newIndex, 0, removed)
-          renderHistoryEditDetail()
+          renderTemplatePanelIfNeeded()
         }
       }
       
@@ -3840,7 +4178,7 @@ function bindEditableSectionEvents(container, sectionType) {
       e.stopPropagation()
       const stepIndex = parseInt(btn.dataset.stepIndex)
       caseTemplate[sectionType][stepIndex].expanded = !caseTemplate[sectionType][stepIndex].expanded
-      renderHistoryEditDetail()
+      renderTemplatePanelIfNeeded()
     })
   })
 
@@ -3853,7 +4191,7 @@ function bindEditableSectionEvents(container, sectionType) {
       const duplicatedStep = JSON.parse(JSON.stringify(originalStep))
       duplicatedStep.id = "item" + Date.now()
       caseTemplate[sectionType].splice(stepIndex + 1, 0, duplicatedStep)
-      renderHistoryEditDetail()
+      renderTemplatePanelIfNeeded()
     })
   })
 
@@ -3869,11 +4207,11 @@ function bindEditableSectionEvents(container, sectionType) {
   container.querySelectorAll(".delete-step-btn").forEach(btn => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation()
-      const confirmed = await showConfirmDialog("确定要删除此步骤吗？", "删����认")
+      const confirmed = await showConfirmDialog("确定要删除此步骤吗？", "删除确认")
       if (confirmed) {
         const stepIndex = parseInt(btn.dataset.stepIndex)
         caseTemplate[sectionType].splice(stepIndex, 1)
-        renderHistoryEditDetail()
+        renderTemplatePanelIfNeeded()
       }
     })
   })
@@ -3896,7 +4234,7 @@ function bindEditableSectionEvents(container, sectionType) {
       const duplicatedComp = JSON.parse(JSON.stringify(originalComp))
       duplicatedComp.id = "c" + Date.now()
       caseTemplate[sectionType][stepIndex].components.splice(compIndex + 1, 0, duplicatedComp)
-      renderHistoryEditDetail()
+      renderTemplatePanelIfNeeded()
     })
   })
 
@@ -3917,7 +4255,7 @@ function bindEditableSectionEvents(container, sectionType) {
         const stepIndex = parseInt(btn.dataset.stepIndex)
         const compIndex = parseInt(btn.dataset.compIndex)
         caseTemplate[sectionType][stepIndex].components.splice(compIndex, 1)
-        renderHistoryEditDetail()
+        renderTemplatePanelIfNeeded()
       }
     })
   })
@@ -3930,16 +4268,23 @@ function handleSetAsTemplate() {
     caseTemplate = JSON.parse(JSON.stringify(historyCasesForEdit[currentEditCaseIndex]))
     caseTemplate.id = "TEMPLATE_" + Date.now()
     caseTemplate.name = caseTemplate.name + " (模板)"
-    renderHistoryEditCaseList()
-    renderTemplateDisplay()
+  } else {
+    // 取消勾选，清除模板
+    templateCaseIndex = -1
+    caseTemplate = null
   }
+  renderHistoryEditCaseList()
+  renderTemplatePanelIfNeeded()
 }
 
-// 用例名称编辑功能
+// 用例名称编辑功能 - 在模板面板中使用
 function startEditingCaseName() {
-  if (!isViewingTemplate || !caseTemplate) return
+  if (!caseTemplate) return
   
-  elements.historyEditDetailTitle.style.display = "none"
+  // 在模板面板中编辑名称
+  if (elements.templateDetailTitle) {
+    elements.templateDetailTitle.style.display = "none"
+  }
   elements.historyEditCaseNameInput.style.display = "block"
   elements.historyEditCaseNameInput.value = caseTemplate.name
   elements.editCaseNameBtn.style.display = "none"
@@ -3961,14 +4306,16 @@ function saveCaseName() {
   }
   
   cancelEditingCaseName()
-  renderHistoryEditDetail()
-  renderTemplateDisplay()
+  renderTemplatePanelIfNeeded()
 }
 
 function cancelEditingCaseName() {
+  if (elements.templateDetailTitle) {
+    elements.templateDetailTitle.style.display = "block"
+  }
   elements.historyEditDetailTitle.style.display = "block"
   elements.historyEditCaseNameInput.style.display = "none"
-  elements.editCaseNameBtn.style.display = "inline-flex"
+  elements.editCaseNameBtn.style.display = "none"
   elements.saveCaseNameBtn.style.display = "none"
 }
 
@@ -3981,23 +4328,27 @@ function copySectionToClipboard(sectionType) {
   copyToClipboard(JSON.stringify(tc[sectionType], null, 2), "已复制到剪贴板")
 }
 
+// 新增：标记是否正在编辑模板（而非旧的isViewingTemplate模式）
+let isEditingTemplatePanel = false
+
 // 模板编辑 - 步骤编辑
-function openStepEditForHistoryEdit(stepIndex, section) {
+function openStepEditForHistoryEdit(stepIndex, section, forTemplatePanel = false) {
   editingStepIndex = stepIndex
   editingSection = section
   selectedPresetStep = null
   isEditingHistoryCase = true
-
+  isEditingTemplatePanel = forTemplatePanel
+  
   const titleMap = {
     preconditions: stepIndex !== null ? "编辑预置条件" : "添加预置条件",
     steps: stepIndex !== null ? "编辑测试步骤" : "添加测试步骤",
     expectedResults: stepIndex !== null ? "编辑预期结果" : "添加预期结果",
   }
-
+  
   elements.stepEditTitle.textContent = titleMap[section]
   elements.stepImportJsonInput.value = ""
-
-  if (stepIndex !== null) {
+  
+  if (stepIndex !== null && caseTemplate) {
     const item = caseTemplate[section][stepIndex]
     elements.stepNameInput.value = item.name
     elements.stepDescInput.value = item.description || ""
@@ -4005,7 +4356,7 @@ function openStepEditForHistoryEdit(stepIndex, section) {
     elements.stepNameInput.value = ""
     elements.stepDescInput.value = ""
   }
-
+  
   // 需求2：渲染预置步骤的下拉选择
   renderPresetStepsDropdown()
   
@@ -4067,7 +4418,12 @@ function saveStepForHistoryEdit() {
     showNotification("请输入名称", "error", 2000)
     return
   }
-
+  
+  if (!caseTemplate) {
+    showNotification("模板不存在", "error", 2000)
+    return
+  }
+  
   if (editingStepIndex !== null) {
     caseTemplate[editingSection][editingStepIndex].name = name
     caseTemplate[editingSection][editingStepIndex].description = elements.stepDescInput.value.trim()
@@ -4081,7 +4437,7 @@ function saveStepForHistoryEdit() {
         params: JSON.parse(JSON.stringify(comp.params)),
       }))
     }
-
+    
     const newItem = {
       id: "item" + Date.now(),
       name: name,
@@ -4091,37 +4447,39 @@ function saveStepForHistoryEdit() {
     }
     caseTemplate[editingSection].push(newItem)
   }
-
+  
   closeStepEdit()
-  renderHistoryEditDetail()
+  // 新布局：更新模板面板而非旧的renderHistoryEditDetail
+  renderTemplatePanelIfNeeded()
   showNotification("步骤保存成功", "success", 2000)
 }
 
 // 模板编辑 - 组件编辑
-function openComponentEditForHistoryEdit(stepIndex, compIndex, section) {
+function openComponentEditForHistoryEdit(stepIndex, compIndex, section, forTemplatePanel = false) {
   editingStepIndex = stepIndex
   editingComponentIndex = compIndex
   editingSection = section
   selectedPresetComponent = null
   isEditingHistoryCase = true
+  isEditingTemplatePanel = forTemplatePanel
 
   elements.componentImportJsonInput.value = ""
 
-  if (compIndex !== null) {
+  if (compIndex !== null && caseTemplate) {
     const comp = caseTemplate[section][stepIndex].components[compIndex]
     elements.componentEditTitle.textContent = "编辑组件"
     const presetComp = presetComponents.find(p => p.type === comp.type)
     elements.componentTypeSelect.value = presetComp ? presetComp.name : comp.type
     elements.componentNameInput.value = comp.name
     elements.componentParamsInput.value = JSON.stringify(comp.params, null, 2)
-    // 更新参数摘要��示
+    // 更新参数摘要显示
     updateParamSummary(comp.params)
   } else {
     elements.componentEditTitle.textContent = "添加组件"
     elements.componentTypeSelect.value = ""
     elements.componentNameInput.value = ""
     elements.componentParamsInput.value = "{}"
-    // 清空���数���要显示
+    // 清空参数摘要显示
     updateParamSummary({})
   }
 
@@ -4254,7 +4612,8 @@ function saveComponentForHistoryEdit() {
   }
 
   closeComponentEdit()
-  renderHistoryEditDetail()
+  // 新布局：更新模板面板而非旧的renderHistoryEditDetail
+  renderTemplatePanelIfNeeded()
   showNotification("组件保存成功", "success", 2000)
 }
 

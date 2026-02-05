@@ -516,23 +516,18 @@
         <h2>编辑历史用例</h2>
         <button class="close-btn" id="closeHistoryCaseEditBtn">×</button>
       </div>
-      <div class="modal-body">
-        <!-- 左侧面板 -->
+      <div class="modal-body history-edit-body">
+        <!-- 左侧面板：仅已选用例列表 -->
         <div class="case-list-panel history-edit-left-panel">
-          <!-- 已选用例列表 -->
           <div class="selected-cases-list-section">
             <h3>已选择的用例</h3>
             <div class="case-list" id="historyEditCaseList"></div>
           </div>
-          <!-- 用例模板 -->
-          <div class="template-section">
-            <h3>用例模板</h3>
-            <div class="template-hint">点击上方用例右侧的"设为模板"按钮选择模板</div>
-            <div class="template-case" id="templateCaseDisplay"></div>
-          </div>
         </div>
-        <!-- 右侧用例详情 -->
-        <div class="case-detail-panel" id="historyEditDetailPanel">
+        <!-- 右侧面板：用例详情 + 用例模板并排 -->
+        <div class="history-edit-right-panel">
+          <!-- 用例详情 -->
+          <div class="case-detail-panel" id="historyEditDetailPanel">
       <div class="detail-header">
         <div class="case-name-edit-section">
           <h2 id="historyEditDetailTitle">用例名称</h2>
@@ -599,6 +594,44 @@
               </div>
             </div>
             <div class="steps-list" id="historyEditExpectedResultList"></div>
+          </div>
+        </div>
+          <!-- 用例模板面板（仅当当前用例被设为模板时显示） -->
+          <div class="case-template-panel" id="caseTemplatePanel" style="display: none;">
+            <div class="template-panel-header">
+              <h3>用例模板</h3>
+              <span class="template-panel-hint">基于选中用例生成的模板</span>
+            </div>
+            <div class="template-panel-content">
+              <div class="detail-header">
+                <h2 id="templateDetailTitle">模板名称</h2>
+                <p id="templateDetailId">模板 ID: --</p>
+              </div>
+              <!-- 模板预置条件区域 -->
+              <div class="detail-section">
+                <div class="section-header">
+                  <h3>预置条件</h3>
+                  <button class="add-btn small" id="addTemplatePreconditionBtn">+ 添加</button>
+                </div>
+                <div class="steps-list" id="templatePreconditionList"></div>
+              </div>
+              <!-- 模板测试步骤区域 -->
+              <div class="detail-section">
+                <div class="section-header">
+                  <h3>测试步骤</h3>
+                  <button class="add-btn small" id="addTemplateStepBtn">+ 添加</button>
+                </div>
+                <div class="steps-list" id="templateStepsList"></div>
+              </div>
+              <!-- 模板预期结果区域 -->
+              <div class="detail-section">
+                <div class="section-header">
+                  <h3>预期结果</h3>
+                  <button class="add-btn small" id="addTemplateExpectedResultBtn">+ 添加</button>
+                </div>
+                <div class="steps-list" id="templateExpectedResultList"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

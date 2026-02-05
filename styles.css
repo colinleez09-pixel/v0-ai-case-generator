@@ -3149,18 +3149,19 @@ body {
   max-height: 0;
   opacity: 0;
   margin-top: 0;
-  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
-              opacity 0.25s ease-out, 
-              margin-top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Smooth easing: ease-out for natural deceleration */
+  transition: max-height 0.32s ease-out, 
+              opacity 0.28s ease-out, 
+              margin-top 0.32s ease-out;
 }
 
 .json-tree-branch.expanded > .json-tree-children {
-  max-height: 8000px; /* Large enough to accommodate deep nested content */
   opacity: 1;
   margin-top: 4px;
-  transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1), 
-              opacity 0.3s ease-in 0.05s, 
-              margin-top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Smooth easing: ease-out for both expand and collapse */
+  transition: max-height 0.32s ease-out, 
+              opacity 0.28s ease-out 0.04s, 
+              margin-top 0.32s ease-out;
 }
 
 .json-tree-leaf {

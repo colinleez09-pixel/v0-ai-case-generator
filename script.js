@@ -1080,12 +1080,25 @@ function bindJsonTreeEvents() {
     header.addEventListener('click', (e) => {
       e.stopPropagation()
       const node = header.closest('.json-tree-branch')
+      const children = node.querySelector(':scope > .json-tree-children')
       
-      // Use class toggle for smooth CSS animation
       if (node.classList.contains('expanded')) {
+        // Collapse: first set explicit height, then animate to 0
+        children.style.maxHeight = children.scrollHeight + 'px'
+        // Force reflow
+        children.offsetHeight
+        children.style.maxHeight = '0px'
         node.classList.remove('expanded')
       } else {
+        // Expand: set to scrollHeight then clear after animation
         node.classList.add('expanded')
+        children.style.maxHeight = children.scrollHeight + 'px'
+        // Clear max-height after animation completes to allow dynamic content
+        setTimeout(() => {
+          if (node.classList.contains('expanded')) {
+            children.style.maxHeight = 'none'
+          }
+        }, 350)
       }
     })
   })
@@ -1112,9 +1125,19 @@ function bindJsonTreeEvents() {
 btn.addEventListener('click', () => {
   const treeName = btn.dataset.treeName
   const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
-  // Use class toggle for smooth CSS animation
-  tree.querySelectorAll('.json-tree-branch').forEach(node => {
-  node.classList.add('expanded')
+  // Expand all with smooth animation - process from innermost to outermost
+  const branches = Array.from(tree.querySelectorAll('.json-tree-branch')).reverse()
+  branches.forEach((node, index) => {
+    if (!node.classList.contains('expanded')) {
+      const children = node.querySelector(':scope > .json-tree-children')
+      node.classList.add('expanded')
+      children.style.maxHeight = children.scrollHeight + 'px'
+      setTimeout(() => {
+        if (node.classList.contains('expanded')) {
+          children.style.maxHeight = 'none'
+        }
+      }, 350)
+    }
   })
   })
   })
@@ -1127,9 +1150,15 @@ btn.addEventListener('click', () => {
   btn.addEventListener('click', () => {
   const treeName = btn.dataset.treeName
   const tree = elements.paramConfigContainer.querySelector(`[data-json-tree="${treeName}"]`)
-  // Use class toggle for smooth CSS animation
-  tree.querySelectorAll('.json-tree-branch').forEach(node => {
-  node.classList.remove('expanded')
+  // Collapse all with smooth animation
+  tree.querySelectorAll('.json-tree-branch.expanded').forEach(node => {
+    const children = node.querySelector(':scope > .json-tree-children')
+    // Set explicit height first for smooth transition
+    children.style.maxHeight = children.scrollHeight + 'px'
+    // Force reflow
+    children.offsetHeight
+    children.style.maxHeight = '0px'
+    node.classList.remove('expanded')
   })
     })
   })

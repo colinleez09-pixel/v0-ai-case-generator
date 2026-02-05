@@ -954,6 +954,51 @@ def generate_test_cases():
     })
 
 
+# 7. 系统预置函数数据（用于下拉框分类展示）
+SYSTEM_PRESET_FUNCTIONS = {
+    "时间函数": [
+        {"name": "G.now()", "description": "获取当前时间，返回yyyyMMddHHmmss格式"},
+        {"name": "G.nowFmt(G.TIMESTAMP)", "description": "获取当前时间戳格式"},
+        {"name": "G.modYear(time,offset)", "description": "年偏移，如 G.modYear(20170605010101,1) 往后偏移1年，-1往前偏移"},
+        {"name": "G.modMonth(time,offset)", "description": "月偏移，如 G.modMonth(20170605010101,1) 往后偏移1月"},
+        {"name": "G.modDay(time,offset)", "description": "日偏移，如 G.modDay(G.now(),1) 往后偏移1天"},
+        {"name": "G.modHour(time,offset)", "description": "小时偏移，如 G.modHour(G.now(),1) 往后偏移1小时"},
+        {"name": "G.modMinute(time,offset)", "description": "分钟偏移，如 G.modMinute(G.now(),1) 往后偏移1分钟"},
+        {"name": "G.modSecond(time,offset)", "description": "秒偏移，如 G.modSecond(G.now(),1) 往后偏移1秒"},
+        {"name": "G.dateFmt(time,format)", "description": "时间格式化，如 G.dateFmt(G.now(),'yyyyMMdd') 返回日期部分"},
+        {"name": "G.dateFmt(time,oldFmt,newFmt)", "description": "时间格式转换，如 G.dateFmt('2017-09-29 15:59:59','yyyy-MM-dd HH:mm:ss','dd/MM/yyyy HH:mm:ss')"},
+        {"name": "G.getMonthTotalDay(time)", "description": "获取当月天数，如 G.getMonthTotalDay(G.now()) 返回当月总天数"},
+        {"name": "G.dateFmt(time,'W')", "description": "获取星期几，返回1-7（周一至周日）"},
+        {"name": "G.getDateByWeek(weekday)", "description": "通过星期几获取对应时间，如 G.getDateByWeek(3) 获取本周三日期"},
+        {"name": "G.getSecond(timeStr)", "description": "获取指定时间的秒数"},
+        {"name": "G.getEnvTime()", "description": "获取被测环境系统时间，可指定环境如 G.getEnvTime(Env.BMPAPP101.sshurl)"},
+        {"name": "G.isInTime(time,start,end)", "description": "时间范围判断，默认yyyyMMddHHmmss格式"},
+        {"name": "G.isInTime(time,start,end,format)", "description": "时间范围判断，指定格式如 G.isInTime('20171109','20171108','20171110','yyyyMMdd')"},
+        {"name": "G.today()", "description": "获取当天日期，返回yyyyMMdd格式"},
+        {"name": "G.uuid()", "description": "生成UUID唯一标识符"}
+    ]
+}
+
+
+@app.route('/api/system-functions', methods=['GET'])
+def get_system_functions():
+    """
+    接口7: 获取系统预置函数数据
+    用于文本框输入${}时下拉框的分类展示
+    返回格式: { 
+        "success": true, 
+        "data": {
+            "时间函数": [...],
+            ...
+        }
+    }
+    """
+    return jsonify({
+        "success": True,
+        "data": SYSTEM_PRESET_FUNCTIONS
+    })
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """健康检查接口"""
@@ -972,6 +1017,7 @@ if __name__ == '__main__':
     print("  GET  /api/param-schemas                           - 获取参数配置架构")
     print("  GET  /api/template-params/<type>/<template>       - 获取模板特定参数")
     print("  POST /api/generate-test-cases                     - 生成测试用例")
+    print("  GET  /api/system-functions                        - 获取系统预置函数")
     print("  GET  /health                                      - 健康检查")
     print("=" * 60 + "\n")
     

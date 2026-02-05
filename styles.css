@@ -2569,6 +2569,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-width: 700px;
+  width: 100%;
 }
 
 .param-field {
@@ -2813,9 +2815,44 @@ body {
   line-height: 1.4;
 }
 
+/* 自动完成下拉框分组样式 */
+.autocomplete-group {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.autocomplete-group:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-group-header {
+  padding: 10px 14px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #f9fafb;
+  border-bottom: 1px solid #f3f4f6;
+  position: sticky;
+  top: 0;
+}
+
+.autocomplete-group .param-autocomplete-option {
+  padding-left: 20px;
+}
+
+.autocomplete-group .param-autocomplete-var-name {
+  color: #1e40af;
+}
+
+.autocomplete-group .param-autocomplete-option[data-is-function="true"] .param-autocomplete-var-name {
+  color: #7c3aed;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
 #paramConfigModal {
   max-width: 90vw;
-  width: fit-content;
+  width: 800px;
   min-width: 480px;
   margin: 0 auto;
 }
@@ -3015,6 +3052,8 @@ body {
   border-radius: 8px;
   padding: 16px;
   background: #fafbfc;
+  min-width: 650px;
+  width: 100%;
 }
 
 .param-field-header {
@@ -3058,6 +3097,8 @@ body {
   padding: 12px;
   max-height: 400px;
   overflow-y: auto;
+  min-width: 600px;
+  width: 100%;
 }
 
 .json-tree-node {
@@ -3369,6 +3410,37 @@ body {
   font-size: 11px;
   color: #6b7280;
   margin-top: 2px;
+}
+
+/* json-tree自动完成下拉框分组样式 */
+.json-tree-autocomplete-dropdown .autocomplete-group {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.json-tree-autocomplete-dropdown .autocomplete-group:last-child {
+  border-bottom: none;
+}
+
+.json-tree-autocomplete-dropdown .autocomplete-group-header {
+  padding: 8px 12px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #f9fafb;
+  border-bottom: 1px solid #f3f4f6;
+  position: sticky;
+  top: 0;
+}
+
+.json-tree-autocomplete-dropdown .autocomplete-group .param-autocomplete-option {
+  padding-left: 16px;
+}
+
+.json-tree-autocomplete-dropdown .autocomplete-group .param-autocomplete-option[data-is-function="true"] .param-autocomplete-var-name {
+  color: #7c3aed;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
 /* 验证规则选择器 */

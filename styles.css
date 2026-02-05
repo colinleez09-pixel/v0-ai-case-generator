@@ -2569,8 +2569,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  min-width: 700px;
   width: 100%;
+}
+
+/* 当包含json-tree时使用固定最小宽度 */
+.param-config-container:has(.param-field-json-tree) {
+  min-width: 700px;
 }
 
 .param-field {
@@ -2852,9 +2856,15 @@ body {
 
 #paramConfigModal {
   max-width: 90vw;
+  width: fit-content;
+  min-width: 380px;
+  margin: 0 auto;
+}
+
+/* 当包含json-tree时（Soap/Rest组件）使用固定宽度防止抖动 */
+#paramConfigModal:has(.param-field-json-tree) {
   width: 800px;
   min-width: 480px;
-  margin: 0 auto;
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {

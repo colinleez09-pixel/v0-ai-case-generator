@@ -76,6 +76,12 @@ async function fetchGenerateTestCases(templateFile, apiVersion, historyCases = [
   })
 }
 
+// 接口7: 获取系统预置函数
+async function fetchSystemFunctions() {
+  console.log('[v0] 正在获取系统预置函数...')
+  return await apiRequest('/system-functions')
+}
+
 // ============ 全局变量存储从后端获取的数据 ============
 let caseLibraryOptions = []
 let presetSteps = []
@@ -83,6 +89,7 @@ let presetComponents = []
 let componentDefaultParams = {} // 组件默认参数，从后端获取
 let currentSearchResults = [] // 存储当前搜索结果
 let paramSchemas = {} // 参数配置架构，从后端获取
+let systemPresetFunctions = {} // 系统预置函数，从后端获取（页面初始化时加载一次）
 
 // 预置步骤和组件数据将从后端API获取，不再使用前端默认数据
 
@@ -321,6 +328,15 @@ async function loadBackendData() {
   componentParams: Object.keys(componentDefaultParams).length
   })
   
+  // 加载系统预置函数数据（页面初始化时加载一次，供所有用例编辑使用）
+  try {
+    systemPresetFunctions = await fetchSystemFunctions()
+    console.log('[v0] 系统预置函数加载成功:', Object.keys(systemPresetFunctions))
+  } catch (funcError) {
+    console.error('[v0] 加载系统预置函数失败:', funcError)
+    systemPresetFunctions = {}
+  }
+  
   // 案例库选项会在用户打开筛选面板时按需加载
   } catch (error) {
   console.error('[v0] 加载后端数据失败:', error)
@@ -329,6 +345,7 @@ async function loadBackendData() {
   presetSteps = []
   presetComponents = []
   componentDefaultParams = {}
+  systemPresetFunctions = {}
   }
 }
 
@@ -936,9 +953,9 @@ function generateJsonTree(data, treeName, level, parentPath = '', isResponse = f
     const isDefault = node && node.isDefault
     
 if (isExpandable) {
-  // 可展开的节点（嵌套对象）- 默认展开状态，添加expanded类使箭头正确显示
+  // 可展开的节点（嵌套对象）- 默认展开状态，添加expanded类和初始化标记
   html += `
-    <div class="json-tree-node json-tree-branch expanded" data-path="${currentPath}" data-level="${level}">
+    <div class="json-tree-node json-tree-branch expanded" data-path="${currentPath}" data-level="${level}" data-initial-expanded="true">
       <div class="json-tree-node-header" data-toggle-node>
         <span class="json-tree-toggle">
           <svg class="json-tree-arrow" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -949,7 +966,7 @@ if (isExpandable) {
         <span class="json-tree-type-badge">object</span>
         <span class="json-tree-count">${Object.keys(node).length} 项</span>
       </div>
-      <div class="json-tree-children">
+      <div class="json-tree-children" style="max-height: none; opacity: 1; margin-top: 4px;">
         ${generateJsonTree(node, treeName, level + 1, currentPath, isResponse)}
       </div>
     </div>
@@ -1431,7 +1448,7 @@ function updateJsonTreeWithNewData(fieldName, newData) {
     // 重新应用显示全部字段的切换状态
     const showAllCheckbox = elements.paramConfigContainer.querySelector(`.json-tree-show-all-fields[data-tree-name="${fieldName}"]`)
     if (showAllCheckbox) {
-      // 触发change事件以应用当前状态
+      // ��发change事件以应用当前状态
       showAllCheckbox.dispatchEvent(new Event('change'))
     }
   }
@@ -1545,34 +1562,75 @@ function bindAutocompleteEvents() {
     let lastSearchText = ''
     
     const showAutocomplete = (searchText, cursorPos) => {
-      const filtered = allDefinedVariables.filter(v => 
+      // 过滤用例定义变量
+      const filteredVars = allDefinedVariables.filter(v => 
         v.name.toLowerCase().includes(searchText.toLowerCase())
       )
       
-      if (filtered.length === 0) {
+      // 构建分类展示的HTML
+      let html = ''
+      
+      // 分组1: 用例定义变量
+      if (filteredVars.length > 0) {
+        html += `
+          <div class="autocomplete-group">
+            <div class="autocomplete-group-header">用例定义变量</div>
+            ${filteredVars.map(v => `
+              <div class="param-autocomplete-option" data-var-name="${v.name}">
+                <div class="param-autocomplete-var-name">${v.name}</div>
+                ${v.description ? `<div class="param-autocomplete-var-desc">${v.description}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `
+      }
+      
+      // 分组2+: 系统预置函数（按后端返回的分组名称自动分组）
+      if (systemPresetFunctions && typeof systemPresetFunctions === 'object') {
+        Object.keys(systemPresetFunctions).forEach(groupName => {
+          const funcs = systemPresetFunctions[groupName] || []
+          const filteredFuncs = funcs.filter(f => 
+            f.name.toLowerCase().includes(searchText.toLowerCase()) ||
+            (f.description && f.description.toLowerCase().includes(searchText.toLowerCase()))
+          )
+          
+          if (filteredFuncs.length > 0) {
+            html += `
+              <div class="autocomplete-group">
+                <div class="autocomplete-group-header">${groupName}</div>
+                ${filteredFuncs.map(f => `
+                  <div class="param-autocomplete-option" data-var-name="${f.name}" data-is-function="true">
+                    <div class="param-autocomplete-var-name">${f.name}</div>
+                    ${f.description ? `<div class="param-autocomplete-var-desc">${f.description}</div>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            `
+          }
+        })
+      }
+      
+      if (!html) {
         dropdown.style.display = 'none'
         return
       }
       
-      dropdown.innerHTML = filtered.map(v => `
-        <div class="param-autocomplete-option" data-var-name="${v.name}">
-          <div class="param-autocomplete-var-name">${v.name}</div>
-          ${v.description ? `<div class="param-autocomplete-var-desc">${v.description}</div>` : ''}
-        </div>
-      `).join('')
+      dropdown.innerHTML = html
       
       // 绑定点击事件
       dropdown.querySelectorAll('.param-autocomplete-option').forEach(option => {
         option.addEventListener('click', () => {
           const varName = option.dataset.varName
+          const isFunction = option.dataset.isFunction === 'true'
           const currentValue = input.value
           const beforeCursor = currentValue.substring(0, lastCursorPos - lastSearchText.length - 2)
           const afterCursor = currentValue.substring(lastCursorPos)
           
+          // 函数需要包裹在${}中，变量也需要
           input.value = beforeCursor + '${' + varName + '}' + afterCursor
           dropdown.style.display = 'none'
           
-          // 设置光标位置到变量后面
+          // 设置光标位置到变量/函数后面
           const newCursorPos = beforeCursor.length + varName.length + 3
           input.setSelectionRange(newCursorPos, newCursorPos)
           input.focus()
@@ -1600,7 +1658,7 @@ function bindAutocompleteEvents() {
       const afterDollarBrace = value.substring(lastDollarBrace)
       const closingBrace = afterDollarBrace.indexOf('}')
       
-      // 如果 } 在光标前，说明已经完成输入，不��示自动完成
+      // 如果 } 在光标前，说明已经完成输入，不显示自动完成
       if (closingBrace !== -1 && closingBrace < cursorPos - lastDollarBrace) {
         dropdown.style.display = 'none'
         return
@@ -3476,7 +3534,7 @@ function renderHistoryEditDetail() {
   elements.historyEditDetailTitle.textContent = tc.name
   elements.historyEditDetailId.textContent = `用例 ID: ${tc.id}`
   
-  // 显示/隐藏用例名称编辑按钮（仅在查看模板时显示）
+  // 显示/隐藏��例名称编辑按钮（仅在查看模板时显示）
   elements.editCaseNameBtn.style.display = isViewingTemplate ? "inline-flex" : "none"
   elements.historyEditCaseNameInput.style.display = "none"
   elements.saveCaseNameBtn.style.display = "none"

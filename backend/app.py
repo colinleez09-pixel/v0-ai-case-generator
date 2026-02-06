@@ -513,7 +513,7 @@ MOCK_SEARCH_RESULTS = [
         "steps": [
             {
                 "id": "hs4",
-                "name": "执行套餐变更��作",
+                "name": "执行套餐变更操作",
                 "expanded": False,
                 "components": [
                     {"id": "hc4", "type": "variable", "name": "设置变量 - 变更套餐参数", "params": {"vars": "My_NewOfferingID=${Offer_NewPlan.ID};My_EffectiveDate=${G.now()}"}},
@@ -632,7 +632,7 @@ PRESET_STEPS = [
 
 PRESET_COMPONENTS = [
     {"id": "comp_phone", "type": "phone", "name": "号码配置", "alias": "PhonesAssign", "icon": "phone", "description": "设置主被叫号码、呼叫区域和呼叫转移参数"},
-    {"id": "comp_variable", "type": "variable", "name": "设置变量", "alias": "TableSetVar", "icon": "variable", "description": "创建并设置变量���、设置请求参数、预置测试数据"},
+    {"id": "comp_variable", "type": "variable", "name": "设置变量", "alias": "TableSetVar", "icon": "variable", "description": "创建并设置变量值、设置请求参数、预置测试数据"},
     {"id": "comp_saveUserInfo", "type": "saveUserInfo", "name": "保存用户信息至变量", "alias": "SaveUserInfo", "icon": "save", "description": "创建用户结束后，获取用户信息，保存至环境变量"},
     {"id": "comp_moveForwardEfftime", "type": "moveForwardEfftime", "name": "时间前移", "alias": "MoveForwardEfftime", "icon": "clock-forward", "description": "时间前移"},
     {"id": "comp_delayTime", "type": "delayTime", "name": "时间延迟", "alias": "DelayTime", "icon": "clock-delay", "description": "执行延迟时间"},

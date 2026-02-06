@@ -349,7 +349,7 @@ async function loadBackendData() {
   }
 }
 
-// 渲染组件参数��带截断/展开功能）
+// 渲染组件参数（带截断/展开功能）
 function renderComponentParams(params) {
   const jsonStr = JSON.stringify(params, null, 2)
   const lines = jsonStr.split('\n')
@@ -459,7 +459,7 @@ function init() {
   })
 }
 
-// ============ 参数配置�����能 ============
+// ============ 参数配置功能 ============
 
 // 递归收集JSON树中的saveAs变量
 function collectSaveAsVariables(obj, componentName, variables, parentPath = '') {
@@ -603,7 +603,7 @@ function collectAllVariables() {
 }
 
 function openParamConfig() {
-  // 更新全局变量列表：合并数据模型中的变量和当前���缓存的变量（可能包含未保存的组件中的新变量）
+  // 更新全局变量列表：合并数据模型中的变量和当前已缓存的变量（可能包含未保存的组件中的新变量）
   const freshVars = collectAllVariables()
   const pendingVars = allDefinedVariables.filter(v => !freshVars.find(fv => fv.name === v.name))
   allDefinedVariables = [...freshVars, ...pendingVars]
@@ -1275,7 +1275,7 @@ btn.addEventListener('click', () => {
       const path = btn.dataset.path
       const treeName = btn.dataset.tree
       
-      // 更新按���状态
+      // 更新按钮状态
       const selector = btn.closest('.json-tree-validation-selector')
       selector.querySelectorAll('.validation-option').forEach(b => b.classList.remove('active'))
       btn.classList.add('active')
@@ -1533,7 +1533,7 @@ function updateJsonTreeWithNewData(fieldName, newData) {
     // 重新应用显示全部字段的切换状态
     const showAllCheckbox = elements.paramConfigContainer.querySelector(`.json-tree-show-all-fields[data-tree-name="${fieldName}"]`)
     if (showAllCheckbox) {
-      // ��发change事件以应用当前状态
+      // 触发change事件以应用当前状态
       showAllCheckbox.dispatchEvent(new Event('change'))
     }
   }
@@ -1722,20 +1722,24 @@ function bindAutocompleteEvents() {
         })
       })
       
-      // 定位下拉框（使用fixed定位，避免被overflow:hidden的父元素裁剪）
+      // 定位下拉框
       dropdown.style.display = 'block'
-      const inputRect = input.getBoundingClientRect()
-      const dropdownHeight = dropdown.offsetHeight
-      const viewportHeight = window.innerHeight
-      // 默认显示在输入框下方
-      let top = inputRect.bottom + 4
-      // 如果下方空间不够，显示在上方
-      if (top + dropdownHeight > viewportHeight - 10) {
-        top = inputRect.top - dropdownHeight - 4
+      
+      // 仅对json-tree类型的下拉框使用fixed定位（避免被overflow:hidden的父元素裁剪）
+      // 普通param-autocomplete-dropdown使用自身的position:absolute即可
+      const isJsonTreeDropdown = dropdown.classList.contains('json-tree-autocomplete-dropdown')
+      if (isJsonTreeDropdown) {
+        const inputRect = input.getBoundingClientRect()
+        const dropdownHeight = dropdown.offsetHeight
+        const viewportHeight = window.innerHeight
+        let top = inputRect.bottom + 4
+        if (top + dropdownHeight > viewportHeight - 10) {
+          top = inputRect.top - dropdownHeight - 4
+        }
+        dropdown.style.left = inputRect.left + 'px'
+        dropdown.style.top = top + 'px'
+        dropdown.style.width = Math.max(inputRect.width, 240) + 'px'
       }
-      dropdown.style.left = inputRect.left + 'px'
-      dropdown.style.top = top + 'px'
-      dropdown.style.width = Math.max(inputRect.width, 240) + 'px'
     }
     
     const handleInput = () => {
@@ -1751,7 +1755,7 @@ function bindAutocompleteEvents() {
         return
       }
       
-      // 检查 ${ 后是否����� }
+      // 检查 ${ 后是否已有 }
       const afterDollarBrace = value.substring(lastDollarBrace)
       const closingBrace = afterDollarBrace.indexOf('}')
       
@@ -1761,7 +1765,7 @@ function bindAutocompleteEvents() {
         return
       }
       
-      // 提取搜索文本（${ 和���标之间的内容）
+      // 提取搜索文本（${ 和光标之间的内容）
       const searchText = beforeCursor.substring(lastDollarBrace + 2)
       lastSearchText = searchText
       lastCursorPos = cursorPos
@@ -2060,7 +2064,7 @@ async function sendMessage() {
   const responses = [
     "好的，我已记录您的需求。还有其他需要补充的信息吗？如果没有，请回复'开始生成'，我将为您生成测试用例。",
     "收到，这对生成高质量的测试用例很有帮助。如果准备好了，请回复'开始生成'。",
-    "明白了，我会根据这些信息优化测试用例。请回复'开始生成'开始生成��程。",
+    "明白了，我会根据这些信息优化测试用例。请回复'开始生成'开始生成流程。",
   ]
 
   if (message.includes("开始生成") || message.includes("生成")) {
@@ -2120,7 +2124,7 @@ async function startGeneratingCases() {
     const generatedCases = await fetchGenerateTestCases(caseFileName, apiVersion, selectedHistoryCases)
     testCases = generatedCases
     
-    // 完成进度
+    // 生成进度
     if (progressFill && progressPercent) {
       progressFill.style.width = "100%"
       progressPercent.textContent = "100%"
@@ -2333,7 +2337,7 @@ function addDownloadCard() {
   messageDiv.innerHTML = `
     <div class="message-avatar">Agent</div>
     <div class="message-content">
-      <p>用例文件生成完成！您可以点击下方卡片下���。</p>
+      <p>用例文件生成完成！您可以点击下方卡片下载。</p>
       ${cardHtml}
       <div class="message-time">${currentTime}</div>
     </div>
@@ -2480,7 +2484,7 @@ function renderCaseDetail() {
 function renderSection(items, container, sectionType) {
   if (!items || items.length === 0) {
     const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步骤" : "预期结果"
-    container.innerHTML = `<p class="empty-hint">暂��${hintText}，点击上方按钮添加</p>`
+    container.innerHTML = `<p class="empty-hint">暂无${hintText}，点击上方按钮添加</p>`
     return
   }
 
@@ -2563,7 +2567,7 @@ function renderSection(items, container, sectionType) {
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                   </svg>
                 </button>
-                <button class="icon-btn danger delete-comp-btn" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}" title="���除">
+                <button class="icon-btn danger delete-comp-btn" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}" title="删除">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -2810,7 +2814,7 @@ function openStepEdit(stepIndex, section) {
 
   const titleMap = {
     preconditions: stepIndex !== null ? "编辑预置条件" : "添加预置条件",
-    steps: stepIndex !== null ? "编辑测试���骤" : "添加测试步骤",
+    steps: stepIndex !== null ? "编辑测试步骤" : "添加测试步骤",
     expectedResults: stepIndex !== null ? "编辑预期结果" : "添加预期结果",
   }
 
@@ -3005,7 +3009,7 @@ function handleSearchInput(e) {
   if (value.slice(-1) === "/") {
     // 移除输入框中的 "/"
     elements.historySearchInput.value = value.slice(0, -1)
-    // ���示筛选��板
+    // 显示筛选面板
     renderFilterPanel()
     elements.filterPanel.classList.add("show")
   } else {
@@ -3018,7 +3022,7 @@ async function renderFilterPanel() {
   if (caseLibraryOptions.length === 0) {
     try {
       caseLibraryOptions = await fetchCaseLibraryOptions()
-      console.log('[v0] ���例库选项已加载:', caseLibraryOptions)
+      console.log('[v0] 用例库选项已加载:', caseLibraryOptions)
     } catch (error) {
       console.error('[v0] 加载案例库选项失败:', error)
       // 使用默认选项
@@ -3118,7 +3122,7 @@ function updateInputPadding() {
 async function performHistorySearch() {
   const searchText = elements.historySearchInput.value.trim()
   if (!searchText) {
-    showNotification("��输入��索内容", "error", 2000)
+    showNotification("请输入搜索内容", "error", 2000)
     return
   }
   
@@ -3188,7 +3192,7 @@ function renderSearchResults(results) {
         tempSelectedCases.push(JSON.parse(JSON.stringify(tc)))
         el.classList.add("selected")
         checkbox.checked = true
-        // 需求2：勾选第��个用例时，直接设为模板
+        // 需求2：勾选第一个用例时，直接设为模板
         if (tempSelectedCases.length === 1) {
           caseTemplate = JSON.parse(JSON.stringify(tc))
           caseTemplate.id = "TEMPLATE_" + Date.now()
@@ -3227,7 +3231,7 @@ function updateSelectedCasesPreview() {
         <div class="selected-preview-name">${tc.name}</div>
         <div class="selected-preview-id">${tc.id}</div>
       </div>
-      <button class="selected-preview-remove" data-id="${tc.id}">移���</button>
+      <button class="selected-preview-remove" data-id="${tc.id}">移除</button>
     </div>
   `).join("")
   
@@ -3316,7 +3320,7 @@ function renderHistoryCaseDetailReadonly() {
 
 function renderHistorySectionReadonly(items, container, sectionType) {
   if (!items || items.length === 0) {
-    const hintText = sectionType === "preconditions" ? "预置条����" : sectionType === "steps" ? "测试步骤" : "预期结果"
+    const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步骤" : "预期结果"
     container.innerHTML = `<p class="empty-hint">暂无${hintText}</p>`
     return
   }
@@ -3722,7 +3726,7 @@ function renderTemplatePanelIfNeeded() {
   
   // 只要有模板数据，就显示模板内容（不依赖当前选中的用例）
   if (caseTemplate && templateCaseIndex >= 0) {
-    // ���藏空状态提示，显示模板内容
+    // 隐藏空状态提示，显示模板内容
     if (elements.templateEmptyState) {
       elements.templateEmptyState.style.display = "none"
     }
@@ -3767,7 +3771,7 @@ function renderTemplatePanelIfNeeded() {
   }
 }
 
-// 新增：渲染模��section（可编辑模式）- 复用原有的editable渲染逻辑
+// 新增：渲染模板section（可编辑模式）- 复用原有的editable渲染逻辑
 function renderTemplateSectionEditable(items, container, sectionType) {
   if (!items || items.length === 0) {
     const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步骤" : "预期结果"
@@ -4047,7 +4051,7 @@ function bindTemplateSectionEvents(container, sectionType) {
 
 function renderHistoryEditSectionReadonly(items, container, sectionType) {
   if (!items || items.length === 0) {
-    const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步��" : "预期结果"
+    const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步骤" : "预期结果"
     container.innerHTML = `<p class="empty-hint">暂无${hintText}</p>`
     return
   }
@@ -4641,7 +4645,7 @@ function renderPresetComponentsDropdown() {
     </div>
   `).join('')
   
-  // 清除之前的事件监听器，使用新的克隆元素替���旧元素
+  // 清除之前的事件监听器，使用新的克隆元素替换旧元素
   const oldTypeSelect = elements.componentTypeSelect
   const newTypeSelect = oldTypeSelect.cloneNode(true)
   oldTypeSelect.parentNode.replaceChild(newTypeSelect, oldTypeSelect)
@@ -4760,7 +4764,7 @@ function saveComponentForHistoryEdit() {
   showNotification("组件保存成功", "success", 2000)
 }
 
-// JSON导入��能
+// JSON导入功能
 function importStepFromJson() {
   const jsonStr = elements.stepImportJsonInput.value.trim()
   if (!jsonStr) {
@@ -4776,7 +4780,7 @@ function importStepFromJson() {
     if (step.description) {
       elements.stepDescInput.value = step.description
     }
-    // 如���有组件，保存以便后续使用
+    // 如果有组件，保存以便后续使用
     if (step.components && step.components.length > 0) {
       selectedPresetStep = step
     }
@@ -4923,7 +4927,7 @@ function openComponentEdit(stepIndex, compIndex, section) {
   editingComponentIndex = compIndex
   editingSection = section
   selectedPresetComponent = null
-  isEditingHistoryCase = false  // 确保这是���试用例详情页面的编辑
+  isEditingHistoryCase = false  // 确保这是测试用例详情页面的编辑
   
   // 关键修复：重新绑定保存按钮为saveComponent
   elements.saveComponentBtn.onclick = saveComponent

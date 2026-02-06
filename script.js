@@ -659,6 +659,11 @@ function saveParamConfig() {
   
   closeParamConfig()
   showNotification("参数配置已保存", "success", 2000)
+  
+  // 保存后立即刷新全局变量列表，使新增变量在其他输入框的autocomplete中可用
+  setTimeout(() => {
+    allDefinedVariables = collectAllVariables()
+  }, 100)
 }
 
 // 校验必填字段
@@ -765,7 +770,7 @@ function generateParamForm(componentType, params) {
   // 全局"显示全部字段"开关现在已移至每个json-tree的actions区域内
   
   paramSchema.forEach(field => {
-  const fieldHtml = generateParamField(field, params[field.name] || '')
+  const fieldHtml = generateParamField(field, params[field.name] || '', params)
   container.insertAdjacentHTML('beforeend', fieldHtml)
   })
   
@@ -794,7 +799,7 @@ function getParamSchema(componentType) {
   return paramSchemas[componentType] || []
 }
 
-function generateParamField(field, value) {
+function generateParamField(field, value, allParams) {
   const requiredClass = field.required ? 'required' : ''
   const requiredMark = field.required ? ' *' : ''
   
@@ -864,6 +869,22 @@ function generateParamField(field, value) {
   } else if (field.type === 'variable-list') {
     // 解析 vars 参数，格式为 "My_Var1=value1;My_Var2=value2"
     const variables = parseVariables(value)
+    // 从 allParams 中获取 varDescriptions 并合并到 variables
+    if (allParams && allParams.varDescriptions) {
+      const descPairs = allParams.varDescriptions.split(';').filter(d => d.trim())
+      const descMap = {}
+      descPairs.forEach(pair => {
+        const [name, ...descParts] = pair.split(':')
+        if (name && descParts.length > 0) {
+          descMap[name.trim()] = descParts.join(':').trim()
+        }
+      })
+      variables.forEach(v => {
+        if (v.name && descMap[v.name]) {
+          v.description = descMap[v.name]
+        }
+      })
+    }
     const variablesHtml = variables.map((v, idx) => `
       <div class="param-variable-item">
         <div class="param-variable-inputs">
@@ -1212,7 +1233,7 @@ btn.addEventListener('click', () => {
       const path = btn.dataset.path
       const treeName = btn.dataset.tree
       
-      // 更新按钮状态
+      // 更新按���状态
       const selector = btn.closest('.json-tree-validation-selector')
       selector.querySelectorAll('.validation-option').forEach(b => b.classList.remove('active'))
       btn.classList.add('active')
@@ -2920,7 +2941,7 @@ function handleSearchInput(e) {
   if (value.slice(-1) === "/") {
     // 移除输入框中的 "/"
     elements.historySearchInput.value = value.slice(0, -1)
-    // ���示筛选面板
+    // ���示筛选��板
     renderFilterPanel()
     elements.filterPanel.classList.add("show")
   } else {
@@ -4657,6 +4678,9 @@ function saveComponentForHistoryEdit() {
     caseTemplate[editingSection][editingStepIndex].components.push(newComp)
   }
 
+  // 刷新全局变量列表，使新增/修改的变量即时在autocomplete中可用
+  allDefinedVariables = collectAllVariables()
+  
   closeComponentEdit()
   // 新布局：更新模板面板而非旧的renderHistoryEditDetail
   renderTemplatePanelIfNeeded()
@@ -4810,6 +4834,9 @@ function saveComponent() {
     }
   }
 
+  // 刷新全局变量列表，使新增/修改的变量即时在autocomplete中可用
+  allDefinedVariables = collectAllVariables()
+  
   closeComponentEdit()
   if (isEditingHistoryCase) {
     renderHistoryEditDetail()

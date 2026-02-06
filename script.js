@@ -349,7 +349,7 @@ async function loadBackendData() {
   }
 }
 
-// 渲染组件参数（带截断/展开功能）
+// 渲染组件参数��带截断/展开功能）
 function renderComponentParams(params) {
   const jsonStr = JSON.stringify(params, null, 2)
   const lines = jsonStr.split('\n')
@@ -491,97 +491,111 @@ function collectSaveAsVariables(obj, componentName, variables, parentPath = '') 
 // 收集当前用例中所有已定义的变量
 function collectAllVariables() {
   const variables = []
-  let currentCase = testCases[currentCaseIndex]
   
-  // 如果testCases为空，尝试从历史用例编辑模式或模板中获取
-  if (!currentCase && typeof isViewingTemplate !== 'undefined') {
-    if (isViewingTemplate && typeof caseTemplate !== 'undefined') {
-      currentCase = caseTemplate
-    } else if (typeof historyCasesForEdit !== 'undefined' && typeof currentEditCaseIndex !== 'undefined') {
-      currentCase = historyCasesForEdit[currentEditCaseIndex]
-    }
+  // 收集所有相关数据源的变量
+  const casesToScan = []
+  
+  // 1. 当前测试用例
+  if (testCases[currentCaseIndex]) {
+    casesToScan.push(testCases[currentCaseIndex])
   }
   
-  if (!currentCase) {
+  // 2. 历史编辑用例
+  if (typeof historyCasesForEdit !== 'undefined' && typeof currentEditCaseIndex !== 'undefined' && historyCasesForEdit[currentEditCaseIndex]) {
+    casesToScan.push(historyCasesForEdit[currentEditCaseIndex])
+  }
+  
+  // 3. 模板用例
+  if (typeof caseTemplate !== 'undefined' && caseTemplate) {
+    casesToScan.push(caseTemplate)
+  }
+  
+  if (casesToScan.length === 0) {
     return variables
   }
   
-  // 收集预置条件中的变量
-  currentCase.preconditions?.forEach(precondition => {
-    precondition.components?.forEach(component => {
-      if (component.type === 'variable' && component.params?.vars) {
-        const vars = parseVariables(component.params.vars)
-        const descriptions = component.params.varDescriptions ? component.params.varDescriptions.split(';') : []
-        const descMap = {}
-        descriptions.forEach(desc => {
-          const [name, description] = desc.split(':')
-          if (name && description) {
-            descMap[name.trim()] = description.trim()
-          }
-        })
-        vars.forEach(v => {
-          if (v.name) {
-            variables.push({
-              name: v.name,
-              description: descMap[v.name] || v.description || ''
-            })
-          }
-        })
-      }
-      
-      // 也收集预置条件中API/REST响应的saveAs变量
-      if ((component.type === 'api' || component.type === 'restful') && component.params?.rRsp) {
-        collectSaveAsVariables(component.params.rRsp, component.name || component.type, variables)
-      }
+  // 从每个用例中收集变量的辅助函数
+  function collectFromCase(tc) {
+    // 收集预置条件中的变量
+    tc.preconditions?.forEach(precondition => {
+      precondition.components?.forEach(component => {
+        if (component.type === 'variable' && component.params?.vars) {
+          const vars = parseVariables(component.params.vars)
+          const descriptions = component.params.varDescriptions ? component.params.varDescriptions.split(';') : []
+          const descMap = {}
+          descriptions.forEach(desc => {
+            const [name, ...descParts] = desc.split(':')
+            if (name && descParts.length > 0) {
+              descMap[name.trim()] = descParts.join(':').trim()
+            }
+          })
+          vars.forEach(v => {
+            if (v.name) {
+              variables.push({
+                name: v.name,
+                description: descMap[v.name] || v.description || ''
+              })
+            }
+          })
+        }
+        
+        if ((component.type === 'api' || component.type === 'restful') && component.params?.rRsp) {
+          collectSaveAsVariables(component.params.rRsp, component.name || component.type, variables)
+        }
+      })
     })
-  })
-  
-  // 收集测试步骤中的变量
-  currentCase.steps?.forEach(step => {
-    step.components?.forEach(component => {
-      if (component.type === 'variable' && component.params?.vars) {
-        const vars = parseVariables(component.params.vars)
-        const descriptions = component.params.varDescriptions ? component.params.varDescriptions.split(';') : []
-        const descMap = {}
-        descriptions.forEach(desc => {
-          const [name, description] = desc.split(':')
-          if (name && description) {
-            descMap[name.trim()] = description.trim()
-          }
-        })
-        vars.forEach(v => {
-          if (v.name) {
-            variables.push({
-              name: v.name,
-              description: descMap[v.name] || v.description || ''
-            })
-          }
-        })
-      }
-      
-      // 收集API/REST响应验证中的saveAs变量
-      if ((component.type === 'api' || component.type === 'restful') && component.params?.rRsp) {
-        collectSaveAsVariables(component.params.rRsp, component.name || component.type, variables)
-      }
+    
+    // 收集测试步骤中的变量
+    tc.steps?.forEach(step => {
+      step.components?.forEach(component => {
+        if (component.type === 'variable' && component.params?.vars) {
+          const vars = parseVariables(component.params.vars)
+          const descriptions = component.params.varDescriptions ? component.params.varDescriptions.split(';') : []
+          const descMap = {}
+          descriptions.forEach(desc => {
+            const [name, ...descParts] = desc.split(':')
+            if (name && descParts.length > 0) {
+              descMap[name.trim()] = descParts.join(':').trim()
+            }
+          })
+          vars.forEach(v => {
+            if (v.name) {
+              variables.push({
+                name: v.name,
+                description: descMap[v.name] || v.description || ''
+              })
+            }
+          })
+        }
+        
+        if ((component.type === 'api' || component.type === 'restful') && component.params?.rRsp) {
+          collectSaveAsVariables(component.params.rRsp, component.name || component.type, variables)
+        }
+      })
     })
-  })
-  
-  // 收集预期结果中的变量（包括saveAs）
-  currentCase.expectedResults?.forEach(result => {
-    result.components?.forEach(component => {
-      if ((component.type === 'api' || component.type === 'restful') && component.params?.rRsp) {
-        collectSaveAsVariables(component.params.rRsp, component.name || component.type, variables)
-      }
+    
+    // 收集预期结果中的变量（包括saveAs）
+    tc.expectedResults?.forEach(result => {
+      result.components?.forEach(component => {
+        if ((component.type === 'api' || component.type === 'restful') && component.params?.rRsp) {
+          collectSaveAsVariables(component.params.rRsp, component.name || component.type, variables)
+        }
+      })
     })
-  })
+  }
   
-  // 去重
+  casesToScan.forEach(tc => collectFromCase(tc))
+  
+  // 去重（后出现的描述覆盖先出现的空描述）
   const uniqueVars = []
-  const seen = new Set()
+  const seen = new Map()
   variables.forEach(v => {
     if (!seen.has(v.name)) {
-      seen.add(v.name)
+      seen.set(v.name, uniqueVars.length)
       uniqueVars.push(v)
+    } else if (v.description && !uniqueVars[seen.get(v.name)].description) {
+      // 如果新的有描述而旧的没有，用新的描述覆盖
+      uniqueVars[seen.get(v.name)].description = v.description
     }
   })
   
@@ -589,8 +603,10 @@ function collectAllVariables() {
 }
 
 function openParamConfig() {
-  // 更新全局变量列表
-  allDefinedVariables = collectAllVariables()
+  // 更新全局变量列表：合并数据模型中的变量和当前已缓存的变量（可能包含未保存的组件中的新变量）
+  const freshVars = collectAllVariables()
+  const pendingVars = allDefinedVariables.filter(v => !freshVars.find(fv => fv.name === v.name))
+  allDefinedVariables = [...freshVars, ...pendingVars]
   
   // 获取当前组件类型
   let componentType = null
@@ -660,10 +676,36 @@ function saveParamConfig() {
   closeParamConfig()
   showNotification("参数配置已保存", "success", 2000)
   
-  // 保存后立即刷新全局变量列表，使新增变量在其他输入框的autocomplete中可用
-  setTimeout(() => {
-    allDefinedVariables = collectAllVariables()
-  }, 100)
+  // 保存后立即从刚收集的formData中提取变量，更新allDefinedVariables
+  // 注意：此时数据模型尚未更新(要等saveComponent时才写入)，所以不能用collectAllVariables()
+  if (formData.vars) {
+    const newVars = parseVariables(formData.vars)
+    const descMap = {}
+    if (formData.varDescriptions) {
+      formData.varDescriptions.split(';').filter(d => d.trim()).forEach(pair => {
+        const [name, ...descParts] = pair.split(':')
+        if (name && descParts.length > 0) {
+          descMap[name.trim()] = descParts.join(':').trim()
+        }
+      })
+    }
+    // 移除当前组件旧的变量（根据之前存储的参数）
+    // 直接追加新的变量到现有列表（去重）
+    newVars.forEach(v => {
+      if (v.name) {
+        const existing = allDefinedVariables.find(ev => ev.name === v.name)
+        if (existing) {
+          // 更新描述
+          existing.description = descMap[v.name] || v.description || existing.description
+        } else {
+          allDefinedVariables.push({
+            name: v.name,
+            description: descMap[v.name] || v.description || ''
+          })
+        }
+      }
+    })
+  }
 }
 
 // 校验必填字段
@@ -3124,7 +3166,7 @@ function renderSearchResults(results) {
         tempSelectedCases.push(JSON.parse(JSON.stringify(tc)))
         el.classList.add("selected")
         checkbox.checked = true
-        // 需求2：勾选第一个用例时，直接设为模板
+        // 需求2：勾选第��个用例时，直接设为模板
         if (tempSelectedCases.length === 1) {
           caseTemplate = JSON.parse(JSON.stringify(tc))
           caseTemplate.id = "TEMPLATE_" + Date.now()
@@ -3434,6 +3476,7 @@ function initHistoryCaseEditElements() {
   elements.caseTemplatePanel = document.getElementById("caseTemplatePanel")
   elements.templateEmptyState = document.getElementById("templateEmptyState")
   elements.templatePanelContent = document.getElementById("templatePanelContent")
+  elements.templateHeaderInfo = document.getElementById("templateHeaderInfo")
   elements.templateDetailTitle = document.getElementById("templateDetailTitle")
   elements.templateDetailId = document.getElementById("templateDetailId")
   elements.templatePreconditionList = document.getElementById("templatePreconditionList")
@@ -3664,6 +3707,10 @@ function renderTemplatePanelIfNeeded() {
     if (elements.templatePanelContent) {
       elements.templatePanelContent.style.display = "block"
     }
+    // 显示header中的模板名称和ID信息
+    if (elements.templateHeaderInfo) {
+      elements.templateHeaderInfo.style.display = "block"
+    }
     
     // 更新模板面板内容
     if (elements.templateDetailTitle) {
@@ -3690,6 +3737,10 @@ function renderTemplatePanelIfNeeded() {
     }
     if (elements.templatePanelContent) {
       elements.templatePanelContent.style.display = "none"
+    }
+    // 隐藏header中的模板名称和ID信息
+    if (elements.templateHeaderInfo) {
+      elements.templateHeaderInfo.style.display = "none"
     }
   }
 }

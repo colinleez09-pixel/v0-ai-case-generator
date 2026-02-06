@@ -1206,6 +1206,7 @@ body {
 
 .confirm-modal .modal-body {
   padding: 24px;
+  padding-left: 24px;
   text-align: center;
 }
 
@@ -1242,12 +1243,14 @@ body {
   display: flex;
   overflow: hidden;
   min-height: 0;
+  padding-left: 16px;
 }
 
 .small-modal .modal-body {
   flex-direction: column;
   padding: 24px;
   overflow-y: auto;
+  padding-left: 24px;
 }
 
 .modal-footer {
@@ -1263,7 +1266,7 @@ body {
   width: 220px;
   flex-shrink: 0;
   border-right: 1px solid #ecf0f1;
-  padding: 16px 16px 16px 20px;
+  padding: 16px;
   overflow-y: auto;
   direction: rtl;
 }
@@ -2089,6 +2092,7 @@ body {
   flex: 1;
   overflow: hidden;
   min-height: 0;
+  padding-left: 0;
 }
 
 #historyCaseEditOverlay {
@@ -2100,6 +2104,7 @@ body {
   display: flex;
   gap: 20px;
   height: 100%;
+  padding: 0 16px;
 }
 
 .history-edit-left-panel {
@@ -2111,7 +2116,7 @@ body {
   background: #fafbfc;
   border: 1px solid #e5e8eb;
   border-radius: 8px;
-  padding: 16px 16px 16px 20px;
+  padding: 16px;
   overflow-y: auto;
   direction: rtl;
 }
@@ -2156,57 +2161,64 @@ body {
 
 .template-panel-header {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 0;
   margin-bottom: 16px;
-  padding: 16px 0 12px;
+  padding: 14px 16px 10px;
+  background: #e8f5e9;
   border-bottom: 2px solid #27ae60;
+  border-radius: 8px;
   position: sticky;
   top: 0;
-  background: #f8fafb;
   z-index: 2;
 }
 
+.template-panel-header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .template-panel-header h3 {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #27ae60;
   margin: 0;
 }
 
 .template-panel-hint {
-  font-size: 12px;
+  font-size: 11px;
   color: #95a5a6;
-  background: #e8f5e9;
+  background: rgba(39, 174, 96, 0.1);
   padding: 2px 8px;
   border-radius: 4px;
+}
+
+.template-panel-header-info {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+.template-panel-header-info h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 2px;
+  line-height: 1.4;
+}
+
+.template-panel-header-info p {
+  font-size: 12px;
+  color: #7f8c8d;
+  margin: 0;
 }
 
 .template-panel-content {
   overflow-y: auto;
 }
 
-.template-panel-content .detail-header {
-  margin-bottom: 16px;
-  padding: 14px 16px 10px;
-  background: #e8f5e9;
-  border-radius: 8px;
-  border-bottom: 2px solid #27ae60;
-}
-
-.template-panel-content .detail-header h2 {
-  font-size: 15px;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 2px;
-  line-height: 1.4;
-}
-
-.template-panel-content .detail-header p {
-  font-size: 12px;
-  color: #7f8c8d;
-  margin: 0;
-}
+/* template-panel-content detail-header removed - merged into template-panel-header */
 
 .selected-cases-list-section {
   flex: 1;
@@ -3076,6 +3088,7 @@ body {
 
 #paramConfigModal .modal-body {
   padding: 0;
+  padding-left: 0;
   overflow: hidden;
   display: block;
 }
@@ -3924,12 +3937,7 @@ body {
   margin: 0;
 }
 
-/* Template panel content detail-header sticky */
-.template-panel-content .detail-header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
+/* template-panel-content detail-header sticky removed - merged into template-panel-header */
 
 /* 空状态提示样式 */
 .template-empty-state {

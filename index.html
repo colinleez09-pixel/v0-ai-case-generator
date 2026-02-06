@@ -599,8 +599,14 @@
           <!-- 用例模板面板（持久显示，勾选"设为模板"后一直显示） -->
           <div class="case-template-panel" id="caseTemplatePanel">
             <div class="template-panel-header">
-              <h3>用例模板</h3>
-              <span class="template-panel-hint">可编辑的模板</span>
+              <div class="template-panel-header-top">
+                <h3>用例模板</h3>
+                <span class="template-panel-hint">可编辑的模板</span>
+              </div>
+              <div class="template-panel-header-info" id="templateHeaderInfo" style="display: none;">
+                <h2 id="templateDetailTitle">模板名称</h2>
+                <p id="templateDetailId">模板 ID: --</p>
+              </div>
             </div>
             <!-- 空状态提示 -->
             <div class="template-empty-state" id="templateEmptyState">
@@ -614,10 +620,6 @@
               <p style="font-size: 12px; margin-top: 4px;">勾选后可在此编辑模板内容</p>
             </div>
             <div class="template-panel-content" id="templatePanelContent" style="display: none;">
-              <div class="detail-header">
-                <h2 id="templateDetailTitle">模板名称</h2>
-                <p id="templateDetailId">模板 ID: --</p>
-              </div>
               <!-- 模板预置条件区域 -->
               <div class="detail-section">
                 <div class="section-header">

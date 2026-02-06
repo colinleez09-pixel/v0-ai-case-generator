@@ -1206,6 +1206,7 @@ body {
 
 .confirm-modal .modal-body {
   padding: 24px;
+  padding-left: 24px;
   text-align: center;
 }
 
@@ -1242,12 +1243,14 @@ body {
   display: flex;
   overflow: hidden;
   min-height: 0;
+  padding-left: 16px;
 }
 
 .small-modal .modal-body {
   flex-direction: column;
   padding: 24px;
   overflow-y: auto;
+  padding-left: 24px;
 }
 
 .modal-footer {
@@ -1260,11 +1263,16 @@ body {
 
 /* 用例列表面板 */
 .case-list-panel {
-  width: 280px;
+  width: 220px;
   flex-shrink: 0;
   border-right: 1px solid #ecf0f1;
   padding: 16px;
   overflow-y: auto;
+  direction: rtl;
+}
+
+.case-list-panel > * {
+  direction: ltr;
 }
 
 .case-list-panel h3 {
@@ -1272,6 +1280,11 @@ body {
   font-weight: 600;
   color: #7f8c8d;
   margin-bottom: 12px;
+  position: sticky;
+  top: 0;
+  background: white;
+  padding: 4px 0 8px;
+  z-index: 2;
 }
 
 .case-list {
@@ -1309,25 +1322,54 @@ body {
 /* 用例详情面板 */
 .case-detail-panel {
   flex: 1;
-  padding: 24px;
+  padding: 0 20px 24px;
   overflow-y: auto;
   min-width: 0;
+  margin-right: 0;
 }
 
 .detail-header {
   margin-bottom: 24px;
+  position: sticky;
+  top: 0;
+  background: #e3f2fd;
+  z-index: 2;
+  padding: 14px 16px 10px;
+  border-bottom: 2px solid #3498db;
+  border-radius: 8px 8px 8px 8px;
 }
 
 .detail-header h2 {
-  font-size: 24px;
+  font-size: 15px;
   font-weight: 700;
   color: #2c3e50;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  line-height: 1.4;
 }
 
 .detail-header p {
-  font-size: 14px;
+  font-size: 12px;
   color: #7f8c8d;
+  margin: 0;
+}
+
+.detail-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-readonly-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  background: rgba(107, 114, 128, 0.12);
+  border: 1px solid rgba(107, 114, 128, 0.2);
+  padding: 1px 8px;
+  border-radius: 4px;
+  line-height: 1.6;
+  flex-shrink: 0;
 }
 
 .detail-section {
@@ -1552,6 +1594,39 @@ body {
   padding: 8px;
   border-radius: 4px;
   white-space: pre-wrap;
+  word-break: break-all;
+  overflow: hidden;
+  max-height: 80px;
+  position: relative;
+  margin: 0;
+}
+
+.component-params.collapsed {
+  max-height: 80px;
+}
+
+.component-params.expanded {
+  max-height: none;
+}
+
+.component-params-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #5a7a9a;
+  background: #eef3f7;
+  border: 1px solid #d5dde5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.component-params-toggle:hover {
+  background: #d5e3f0;
+  color: #4a6a8a;
 }
 
 /* 已选择的历史用例显示 */
@@ -2036,6 +2111,7 @@ body {
   flex: 1;
   overflow: hidden;
   min-height: 0;
+  padding-left: 0;
 }
 
 #historyCaseEditOverlay {
@@ -2047,19 +2123,25 @@ body {
   display: flex;
   gap: 20px;
   height: 100%;
+  padding: 0 0 0 16px;
 }
 
 .history-edit-left-panel {
   display: flex;
   flex-direction: column;
-  width: 240px;
-  min-width: 240px;
+  width: 210px;
+  min-width: 210px;
   flex-shrink: 0;
   background: #fafbfc;
   border: 1px solid #e5e8eb;
   border-radius: 8px;
   padding: 16px;
   overflow-y: auto;
+  direction: rtl;
+}
+
+.history-edit-left-panel > * {
+  direction: ltr;
 }
 
 .history-edit-right-panel {
@@ -2078,8 +2160,9 @@ body {
   background: #fff;
   border: 1px solid #e5e8eb;
   border-radius: 8px;
-  padding: 16px;
+  padding: 0 16px 16px;
   overflow-y: auto;
+  margin-right: 0;
 }
 
 /* 用例模板面板样式 */
@@ -2090,56 +2173,71 @@ body {
   background: #f8fafb;
   border: 1px solid #d4edda;
   border-radius: 8px;
-  padding: 16px;
+  padding: 0 16px 16px;
   overflow-y: auto;
+  margin-right: 16px;
 }
 
 .template-panel-header {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 0;
   margin-bottom: 16px;
-  padding-bottom: 12px;
+  padding: 14px 16px 10px;
+  background: #e8f5e9;
   border-bottom: 2px solid #27ae60;
+  border-radius: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.template-panel-header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .template-panel-header h3 {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #27ae60;
   margin: 0;
 }
 
 .template-panel-hint {
-  font-size: 12px;
+  font-size: 11px;
   color: #95a5a6;
-  background: #e8f5e9;
+  background: rgba(39, 174, 96, 0.1);
   padding: 2px 8px;
   border-radius: 4px;
+}
+
+.template-panel-header-info {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+.template-panel-header-info h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 2px;
+  line-height: 1.4;
+}
+
+.template-panel-header-info p {
+  font-size: 12px;
+  color: #7f8c8d;
+  margin: 0;
 }
 
 .template-panel-content {
   overflow-y: auto;
 }
 
-.template-panel-content .detail-header {
-  margin-bottom: 16px;
-  padding: 12px;
-  background: #e8f5e9;
-  border-radius: 6px;
-}
-
-.template-panel-content .detail-header h2 {
-  font-size: 15px;
-  color: #2c3e50;
-  margin-bottom: 4px;
-}
-
-.template-panel-content .detail-header p {
-  font-size: 12px;
-  color: #7f8c8d;
-  margin: 0;
-}
+/* template-panel-content detail-header removed - merged into template-panel-header */
 
 .selected-cases-list-section {
   flex: 1;
@@ -3009,6 +3107,7 @@ body {
 
 #paramConfigModal .modal-body {
   padding: 0;
+  padding-left: 0;
   overflow: hidden;
   display: block;
 }
@@ -3496,18 +3595,15 @@ body {
 
 .json-tree-autocomplete-dropdown {
   display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 100;
+  position: fixed;
+  z-index: 9999;
   background: #fff;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   max-height: 200px;
   overflow-y: auto;
-  margin-top: 4px;
+  min-width: 240px;
 }
 
 .json-tree-autocomplete-dropdown .param-autocomplete-option {
@@ -3775,15 +3871,9 @@ body {
   color: #ef4444;
 }
 
-/* 模板面板内的详情区域样式调整 */
+/* 模板面板内的详情区域样式调整 - 与左侧已选用例保持一致 */
 .case-template-panel .detail-section {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e5e8eb;
-}
-
-.case-template-panel .detail-section:last-child {
-  border-bottom: none;
+  margin-bottom: 24px;
 }
 
 .case-template-panel .section-header {
@@ -3794,9 +3884,9 @@ body {
 }
 
 .case-template-panel .section-header h3 {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  color: #374151;
+  color: #2c3e50;
   margin: 0;
 }
 
@@ -3836,10 +3926,13 @@ body {
 /* 用例详情面板样式优化 */
 .history-edit-right-panel .case-detail-panel .detail-header {
   margin-bottom: 16px;
-  padding: 12px;
+  padding: 14px 16px 10px;
   background: #e3f2fd;
-  border-radius: 6px;
+  border-radius: 8px;
   border-bottom: 2px solid #3498db;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .history-edit-right-panel .case-detail-panel .detail-header h2 {
@@ -3853,6 +3946,8 @@ body {
   color: #7f8c8d;
   margin: 0;
 }
+
+/* template-panel-content detail-header sticky removed - merged into template-panel-header */
 
 /* 空状态提示样式 */
 .template-empty-state {
@@ -3875,6 +3970,50 @@ body {
 .template-empty-state p {
   font-size: 14px;
   margin: 0;
+}
+
+/* Scrollbar styling for case list (left-side scrollbar via direction:rtl) */
+.case-list-panel::-webkit-scrollbar,
+.history-edit-left-panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+.case-list-panel::-webkit-scrollbar-track,
+.history-edit-left-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.case-list-panel::-webkit-scrollbar-thumb,
+.history-edit-left-panel::-webkit-scrollbar-thumb {
+  background: #d5dde5;
+  border-radius: 3px;
+}
+
+.case-list-panel::-webkit-scrollbar-thumb:hover,
+.history-edit-left-panel::-webkit-scrollbar-thumb:hover {
+  background: #bdc3c7;
+}
+
+/* Detail panel scrollbar stays on right (default) */
+.case-detail-panel::-webkit-scrollbar,
+.case-template-panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+.case-detail-panel::-webkit-scrollbar-track,
+.case-template-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.case-detail-panel::-webkit-scrollbar-thumb,
+.case-template-panel::-webkit-scrollbar-thumb {
+  background: #d5dde5;
+  border-radius: 3px;
+}
+
+.case-detail-panel::-webkit-scrollbar-thumb:hover,
+.case-template-panel::-webkit-scrollbar-thumb:hover {
+  background: #bdc3c7;
 }
 
 /* 防止布局抖动 */

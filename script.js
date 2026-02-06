@@ -349,6 +349,28 @@ async function loadBackendData() {
   }
 }
 
+// 渲染组件参数（带截断/展开功能）
+function renderComponentParams(params) {
+  const jsonStr = JSON.stringify(params, null, 2)
+  const lines = jsonStr.split('\n')
+  const MAX_LINES = 4
+  const needsTruncation = lines.length > MAX_LINES
+  return `<pre class="component-params${needsTruncation ? ' collapsed' : ''}">${jsonStr}</pre>${needsTruncation ? '<button class="component-params-toggle" onclick="toggleComponentParams(this)">展开参数</button>' : ''}`
+}
+
+function toggleComponentParams(btn) {
+  const pre = btn.previousElementSibling
+  if (pre.classList.contains('collapsed')) {
+    pre.classList.remove('collapsed')
+    pre.classList.add('expanded')
+    btn.textContent = '收起参数'
+  } else {
+    pre.classList.remove('expanded')
+    pre.classList.add('collapsed')
+    btn.textContent = '展开参数'
+  }
+}
+
 // 初始化
 function init() {
   initElements()
@@ -1654,7 +1676,7 @@ function bindAutocompleteEvents() {
         return
       }
       
-      // 检查 ${ 后是否��� }
+      // 检查 ${ 后是否����� }
       const afterDollarBrace = value.substring(lastDollarBrace)
       const closingBrace = afterDollarBrace.indexOf('}')
       
@@ -2441,7 +2463,7 @@ function renderSection(items, container, sectionType) {
               <span class="component-number">${compIndex + 1}</span>
               <div class="component-info">
                 <div class="component-name">${comp.name}</div>
-                <pre class="component-params">${JSON.stringify(comp.params, null, 2)}</pre>
+                ${renderComponentParams(comp.params)}
               </div>
               <div class="component-actions">
                 <button class="icon-btn edit-comp-btn" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}" title="编辑">
@@ -3011,7 +3033,7 @@ function updateInputPadding() {
 async function performHistorySearch() {
   const searchText = elements.historySearchInput.value.trim()
   if (!searchText) {
-    showNotification("请输入��索内容", "error", 2000)
+    showNotification("��输入��索内容", "error", 2000)
     return
   }
   
@@ -3209,7 +3231,7 @@ function renderHistoryCaseDetailReadonly() {
 
 function renderHistorySectionReadonly(items, container, sectionType) {
   if (!items || items.length === 0) {
-    const hintText = sectionType === "preconditions" ? "预置条���" : sectionType === "steps" ? "测试步骤" : "预期结果"
+    const hintText = sectionType === "preconditions" ? "预置条����" : sectionType === "steps" ? "测试步骤" : "预期结果"
     container.innerHTML = `<p class="empty-hint">暂无${hintText}</p>`
     return
   }
@@ -3233,7 +3255,7 @@ function renderHistorySectionReadonly(items, container, sectionType) {
                 <span class="component-number">${compIndex + 1}</span>
                 <div class="component-info">
                   <div class="component-name">${comp.name}</div>
-                  <pre class="component-params">${JSON.stringify(comp.params, null, 2)}</pre>
+                  ${renderComponentParams(comp.params)}
                 </div>
               </div>
             `).join("")
@@ -3651,7 +3673,7 @@ function renderTemplatePanelIfNeeded() {
   }
 }
 
-// 新增：渲染模板section（可编辑模式）- 复用原有的editable渲染逻辑
+// 新增：渲染模��section（可编辑模式）- 复用原有的editable渲染逻辑
 function renderTemplateSectionEditable(items, container, sectionType) {
   if (!items || items.length === 0) {
     const hintText = sectionType === "preconditions" ? "预置条件" : sectionType === "steps" ? "测试步骤" : "预期结果"
@@ -3715,7 +3737,7 @@ function renderTemplateSectionEditable(items, container, sectionType) {
                 <span class="component-number">${compIndex + 1}</span>
                 <div class="component-info">
                   <div class="component-name">${comp.name}</div>
-                  <pre class="component-params">${JSON.stringify(comp.params, null, 2)}</pre>
+                  ${renderComponentParams(comp.params)}
                 </div>
                 <div class="component-actions">
                   <button class="icon-btn template-duplicate-comp-btn" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}" title="复制组件">
@@ -3960,7 +3982,7 @@ function renderHistoryEditSectionReadonly(items, container, sectionType) {
                 <span class="component-number">${compIndex + 1}</span>
                 <div class="component-info">
                   <div class="component-name">${comp.name}</div>
-                  <pre class="component-params">${JSON.stringify(comp.params, null, 2)}</pre>
+                  ${renderComponentParams(comp.params)}
                 </div>
                 <div class="component-actions">
                   <button class="icon-btn copy-comp-json-btn" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}" title="复制组件JSON">
@@ -4042,7 +4064,7 @@ function renderHistoryEditSectionEditable(items, container, sectionType) {
                 <span class="component-number">${compIndex + 1}</span>
                 <div class="component-info">
                   <div class="component-name">${comp.name}</div>
-                  <pre class="component-params">${JSON.stringify(comp.params, null, 2)}</pre>
+                  ${renderComponentParams(comp.params)}
                 </div>
                 <div class="component-actions">
                   <button class="icon-btn duplicate-comp-btn" data-section="${sectionType}" data-step-index="${stepIndex}" data-comp-index="${compIndex}" title="复制组件">

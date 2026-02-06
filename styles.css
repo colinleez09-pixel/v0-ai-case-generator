@@ -1353,6 +1353,25 @@ body {
   margin: 0;
 }
 
+.detail-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-readonly-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  background: rgba(107, 114, 128, 0.12);
+  border: 1px solid rgba(107, 114, 128, 0.2);
+  padding: 1px 8px;
+  border-radius: 4px;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
 .detail-section {
   margin-bottom: 24px;
 }
@@ -2104,7 +2123,7 @@ body {
   display: flex;
   gap: 20px;
   height: 100%;
-  padding: 0 16px;
+  padding: 0 0 0 16px;
 }
 
 .history-edit-left-panel {
@@ -3576,18 +3595,15 @@ body {
 
 .json-tree-autocomplete-dropdown {
   display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 100;
+  position: fixed;
+  z-index: 9999;
   background: #fff;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   max-height: 200px;
   overflow-y: auto;
-  margin-top: 4px;
+  min-width: 240px;
 }
 
 .json-tree-autocomplete-dropdown .param-autocomplete-option {
@@ -3855,15 +3871,9 @@ body {
   color: #ef4444;
 }
 
-/* 模板面板内的详情区域样式调整 */
+/* 模板面板内的详情区域样式调整 - 与左侧已选用例保持一致 */
 .case-template-panel .detail-section {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e5e8eb;
-}
-
-.case-template-panel .detail-section:last-child {
-  border-bottom: none;
+  margin-bottom: 24px;
 }
 
 .case-template-panel .section-header {
@@ -3874,9 +3884,9 @@ body {
 }
 
 .case-template-panel .section-header h3 {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  color: #374151;
+  color: #2c3e50;
   margin: 0;
 }
 

@@ -603,7 +603,7 @@ function collectAllVariables() {
 }
 
 function openParamConfig() {
-  // 更新全局变量列表：合并数据模型中的变量和当前已缓存的变量（可能包含未保存的组件中的新变量）
+  // 更新全局变量列表：合并数据模型中的变量和当前���缓存的变量（可能包含未保存的组件中的新变量）
   const freshVars = collectAllVariables()
   const pendingVars = allDefinedVariables.filter(v => !freshVars.find(fv => fv.name === v.name))
   allDefinedVariables = [...freshVars, ...pendingVars]
@@ -1722,8 +1722,20 @@ function bindAutocompleteEvents() {
         })
       })
       
-      // 定位下拉框
+      // 定位下拉框（使用fixed定位，避免被overflow:hidden的父元素裁剪）
       dropdown.style.display = 'block'
+      const inputRect = input.getBoundingClientRect()
+      const dropdownHeight = dropdown.offsetHeight
+      const viewportHeight = window.innerHeight
+      // 默认显示在输入框下方
+      let top = inputRect.bottom + 4
+      // 如果下方空间不够，显示在上方
+      if (top + dropdownHeight > viewportHeight - 10) {
+        top = inputRect.top - dropdownHeight - 4
+      }
+      dropdown.style.left = inputRect.left + 'px'
+      dropdown.style.top = top + 'px'
+      dropdown.style.width = Math.max(inputRect.width, 240) + 'px'
     }
     
     const handleInput = () => {
@@ -1766,6 +1778,16 @@ function bindAutocompleteEvents() {
         dropdown.style.display = 'none'
       }
     })
+    
+    // 滚动时关闭下拉框（因为使用fixed定位，滚动后位置会偏移）
+    const scrollContainer = input.closest('.json-tree-container')
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', () => {
+        if (dropdown.style.display === 'block') {
+          dropdown.style.display = 'none'
+        }
+      })
+    }
   })
 }
 
@@ -3700,7 +3722,7 @@ function renderTemplatePanelIfNeeded() {
   
   // 只要有模板数据，就显示模板内容（不依赖当前选中的用例）
   if (caseTemplate && templateCaseIndex >= 0) {
-    // 隐藏空状态提示，显示模板内容
+    // ���藏空状态提示，显示模板内容
     if (elements.templateEmptyState) {
       elements.templateEmptyState.style.display = "none"
     }
@@ -4738,7 +4760,7 @@ function saveComponentForHistoryEdit() {
   showNotification("组件保存成功", "success", 2000)
 }
 
-// JSON导入功能
+// JSON导入��能
 function importStepFromJson() {
   const jsonStr = elements.stepImportJsonInput.value.trim()
   if (!jsonStr) {

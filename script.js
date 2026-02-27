@@ -1,5 +1,5 @@
 // ============ API配置 ============
-const API_BASE_URL = 'http://localhost:5000/api'
+const API_BASE_URL = 'https://premiere-reservoir-podcasts-deeply.trycloudflare.com/api'
 
 // API请求封装函数
 async function apiRequest(url, options = {}) {

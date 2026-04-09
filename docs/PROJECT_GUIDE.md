@@ -33,6 +33,19 @@ pnpm dev
 npm run dev
 ```
 
+**重要**: `package.json` 中的 scripts 配置应为：
+
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  }
+}
+```
+
 启动后访问 http://localhost:3000 即可查看应用。
 
 ### 2.4 构建生产版本
@@ -44,6 +57,36 @@ pnpm build
 # 启动生产服务器
 pnpm start
 ```
+
+### 2.5 常见问题排查
+
+**问题 1: PostCSS 插件错误**
+
+如果遇到 `Cannot find module 'tailwindcss'` 或 PostCSS 相关错误：
+
+```bash
+# 确保安装了 @tailwindcss/postcss
+pnpm add -D @tailwindcss/postcss
+```
+
+`postcss.config.mjs` 应配置为：
+
+```js
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+export default config;
+```
+
+**问题 2: Tailwind CSS v4 配置**
+
+Tailwind CSS v4 不再需要 `tailwind.config.ts` 文件，所有主题配置都在 `app/globals.css` 中通过 `@theme` 指令完成。
+
+**问题 3: React Compiler 错误**
+
+如果遇到 `Failed to resolve package babel-plugin-react-compiler`，确保 `next.config.ts` 中**不要**启用 `reactCompiler: true`。
 
 ---
 
@@ -102,11 +145,13 @@ v0-ai-case-generator/
 │   └── README.md                 # 后端说明
 │
 ├── next.config.ts                # Next.js 配置
-├── tailwind.config.ts            # Tailwind CSS 配置
+├── postcss.config.mjs            # PostCSS 配置（Tailwind v4）
 ├── tsconfig.json                 # TypeScript 配置
 ├── components.json               # shadcn/ui 配置
 ├── package.json                  # 项目依赖
 └── pnpm-lock.yaml                # 依赖锁定文件
+
+**注意**: Tailwind CSS v4 不再需要 `tailwind.config.ts`，主题配置在 `app/globals.css` 中完成。
 ```
 
 ---

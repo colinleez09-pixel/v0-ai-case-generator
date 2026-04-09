@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { LogOut, Settings, User, Shield, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useUserStore } from "@/lib/store/user-store";
+import { useAuthStore } from "@/lib/store/auth-store";
 import type { UserRole } from "@/lib/types";
 
 const roleLabels: Record<UserRole, string> = {
@@ -32,11 +33,29 @@ const roleBadgeVariants: Record<
 };
 
 export function UserMenu() {
-  const { user, switchRole } = useUserStore();
+  const router = useRouter();
+  const { user, logout, updateProfile } = useAuthStore();
 
   if (!user) return null;
 
   const initials = user.name.slice(0, 2);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
+  const handleProfileClick = () => {
+    router.push("/profile");
+  };
+
+  const handleSettingsClick = () => {
+    router.push("/settings");
+  };
+
+  const handleSwitchRole = (role: UserRole) => {
+    updateProfile({ role });
+  };
 
   return (
     <DropdownMenu>
@@ -63,17 +82,17 @@ export function UserMenu() {
               </Badge>
             </div>
             <p className="text-xs leading-none text-muted-foreground">
-              工号: {user.employeeId}
+              @{user.username}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleProfileClick}>
             <User className="mr-2 h-4 w-4" />
             <span>个人信息</span>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleSettingsClick}>
             <Settings className="mr-2 h-4 w-4" />
             <span>设置</span>
           </DropdownMenuItem>
@@ -83,21 +102,27 @@ export function UserMenu() {
           切换角色 (演示)
         </DropdownMenuLabel>
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => switchRole("user")}>
+          <DropdownMenuItem onClick={() => handleSwitchRole("user")}>
             <User className="mr-2 h-4 w-4" />
             <span>普通用户</span>
+            {user.role === "user" && <span className="ml-auto text-primary">●</span>}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => switchRole("tc")}>
+          <DropdownMenuItem onClick={() => handleSwitchRole("tc")}>
             <UserCog className="mr-2 h-4 w-4" />
             <span>TC 管理员</span>
+            {user.role === "tc" && <span className="ml-auto text-primary">●</span>}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => switchRole("admin")}>
+          <DropdownMenuItem onClick={() => handleSwitchRole("admin")}>
             <Shield className="mr-2 h-4 w-4" />
             <span>系统管理员</span>
+            {user.role === "admin" && <span className="ml-auto text-primary">●</span>}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-destructive focus:text-destructive">
+        <DropdownMenuItem 
+          className="text-destructive focus:text-destructive"
+          onClick={handleLogout}
+        >
           <LogOut className="mr-2 h-4 w-4" />
           <span>退出登录</span>
         </DropdownMenuItem>

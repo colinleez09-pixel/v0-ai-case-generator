@@ -3,25 +3,42 @@
 import { useState } from "react";
 import {
   Search,
-  Filter,
   LayoutGrid,
   LayoutList,
   Plus,
   Import,
   X,
   Package,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { mockComponents } from "@/lib/mock/components";
-import { mockSites } from "@/lib/mock/sites";
-import type { AtomicComponent } from "@/lib/types";
-import { useUserStore } from "@/lib/store/user-store";
-import { useSiteStore } from "@/lib/store/site-store";
+import { useComponentsStore } from "@/lib/store/components-store";
+import { useAuthStore } from "@/lib/store/auth-store";
+import type { TestComponent } from "@/lib/types";
 
 const componentTypes = [
   { value: "", label: "全部类型" },
@@ -31,29 +48,114 @@ const componentTypes = [
   { value: "button", label: "按钮" },
   { value: "select", label: "选择器" },
   { value: "modal", label: "弹窗" },
+  { value: "table", label: "表格" },
+  { value: "list", label: "列表" },
 ];
 
 export default function ComponentsPage() {
-  const { user } = useUserStore();
-  const { currentSite } = useSiteStore();
+  const { user } = useAuthStore();
+  const { 
+    components, 
+    viewMode, 
+    setViewMode, 
+    addComponent, 
+    updateComponent, 
+    deleteComponent 
+  } = useComponentsStore();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("");
-  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedComponent, setSelectedComponent] =
-    useState<AtomicComponent | null>(null);
+  const [selectedComponent, setSelectedComponent] = useState<TestComponent | null>(null);
+
+  // 弹窗状态
+  const [componentDialogOpen, setComponentDialogOpen] = useState(false);
+  const [editingComponent, setEditingComponent] = useState<TestComponent | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // 表单状态
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    type: "input",
+    category: "",
+  });
 
   const isTcOrAdmin = user?.role === "tc" || user?.role === "admin";
 
-  // 过滤组件
-  const filteredComponents = mockComponents.filter((comp) => {
+  // 过滤组件 - 测试组件不区分局点
+  const filteredComponents = components.filter((comp) => {
     const matchesSearch =
       comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      comp.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (comp.description || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = !selectedType || comp.type === selectedType;
-    const matchesSite = !selectedSiteId || comp.siteId === selectedSiteId;
-    return matchesSearch && matchesType && matchesSite;
+    return matchesSearch && matchesType;
   });
+
+  // 新建组件
+  const handleOpenCreate = () => {
+    setEditingComponent(null);
+    setForm({
+      name: "",
+      description: "",
+      type: "input",
+      category: "",
+    });
+    setComponentDialogOpen(true);
+  };
+
+  // 编辑组件
+  const handleOpenEdit = () => {
+    if (!selectedComponent) return;
+    setEditingComponent(selectedComponent);
+    setForm({
+      name: selectedComponent.name,
+      description: selectedComponent.description || "",
+      type: selectedComponent.type,
+      category: selectedComponent.category || "",
+    });
+    setComponentDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!form.name.trim()) return;
+
+    if (editingComponent) {
+      updateComponent(editingComponent.id, {
+        name: form.name,
+        description: form.description,
+        type: form.type,
+        category: form.category,
+      });
+      setSelectedComponent({
+        ...editingComponent,
+        name: form.name,
+        description: form.description,
+        type: form.type,
+        category: form.category,
+      });
+    } else {
+      const newComp = addComponent({
+        name: form.name,
+        description: form.description,
+        type: form.type,
+        category: form.category,
+        parameters: [],
+        examples: [],
+        ownerId: user?.id || "",
+        ownerName: user?.name || "",
+      });
+      setSelectedComponent(newComp);
+    }
+    setComponentDialogOpen(false);
+  };
+
+  // 删除组件
+  const handleDelete = () => {
+    if (!selectedComponent) return;
+    deleteComponent(selectedComponent.id);
+    setSelectedComponent(null);
+    setDeleteDialogOpen(false);
+  };
 
   return (
     <div className="flex h-full flex-col p-6">
@@ -61,7 +163,7 @@ export default function ComponentsPage() {
         <div>
           <h1 className="text-2xl font-bold">测试原子组件</h1>
           <p className="mt-1 text-muted-foreground">
-            管理可复用的测试组件资产
+            管理可复用的测试组件资产（不区分局点）
           </p>
         </div>
         <div className="flex gap-2">
@@ -71,7 +173,7 @@ export default function ComponentsPage() {
               导入组件
             </Button>
           )}
-          <Button>
+          <Button onClick={handleOpenCreate}>
             <Plus className="mr-2 h-4 w-4" />
             新建组件
           </Button>
@@ -84,37 +186,26 @@ export default function ComponentsPage() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 placeholder="搜索组件名称或描述..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-md border bg-background py-2 pl-8 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="pl-8"
               />
             </div>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              {componentTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedSiteId}
-              onChange={(e) => setSelectedSiteId(e.target.value)}
-              className="rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="">全部局点</option>
-              {mockSites.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.name}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="全部类型" />
+              </SelectTrigger>
+              <SelectContent>
+                {componentTypes.map((type) => (
+                  <SelectItem key={type.value || "all"} value={type.value || "all"}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Separator orientation="vertical" className="h-8" />
             <div className="flex rounded-md border">
               <Button
@@ -169,11 +260,13 @@ export default function ComponentsPage() {
                         {comp.description}
                       </p>
                       <div className="mt-3 flex items-center justify-between">
-                        <Badge variant="secondary" className="text-xs">
-                          {comp.siteName}
-                        </Badge>
+                        {comp.category && (
+                          <Badge variant="secondary" className="text-xs">
+                            {comp.category}
+                          </Badge>
+                        )}
                         <span className="text-xs text-muted-foreground">
-                          {comp.parameters.length} 个参数
+                          {comp.parameters?.length || 0} 个参数
                         </span>
                       </div>
                     </CardContent>
@@ -203,7 +296,9 @@ export default function ComponentsPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge variant="outline">{comp.type}</Badge>
-                        <Badge variant="secondary">{comp.siteName}</Badge>
+                        {comp.category && (
+                          <Badge variant="secondary">{comp.category}</Badge>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -227,19 +322,39 @@ export default function ComponentsPage() {
                   <CardTitle>{selectedComponent.name}</CardTitle>
                   <div className="mt-2 flex gap-2">
                     <Badge variant="outline">{selectedComponent.type}</Badge>
-                    <Badge variant="secondary">
-                      {selectedComponent.siteName}
-                    </Badge>
+                    {selectedComponent.category && (
+                      <Badge variant="secondary">
+                        {selectedComponent.category}
+                      </Badge>
+                    )}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setSelectedComponent(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleOpenEdit}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setSelectedComponent(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <ScrollArea className="h-[calc(100vh-24rem)]">
@@ -248,7 +363,7 @@ export default function ComponentsPage() {
                   <div>
                     <h4 className="mb-2 text-sm font-medium">描述</h4>
                     <p className="text-sm text-muted-foreground">
-                      {selectedComponent.description}
+                      {selectedComponent.description || "暂无描述"}
                     </p>
                   </div>
 
@@ -256,7 +371,7 @@ export default function ComponentsPage() {
 
                   <div>
                     <h4 className="mb-2 text-sm font-medium">参数列表</h4>
-                    {selectedComponent.parameters.length > 0 ? (
+                    {selectedComponent.parameters && selectedComponent.parameters.length > 0 ? (
                       <div className="space-y-2">
                         {selectedComponent.parameters.map((param) => (
                           <div
@@ -298,7 +413,7 @@ export default function ComponentsPage() {
 
                   <div>
                     <h4 className="mb-2 text-sm font-medium">使用示例</h4>
-                    {selectedComponent.examples.length > 0 ? (
+                    {selectedComponent.examples && selectedComponent.examples.length > 0 ? (
                       <div className="space-y-2">
                         {selectedComponent.examples.map((example, idx) => (
                           <pre
@@ -313,12 +428,119 @@ export default function ComponentsPage() {
                       <p className="text-sm text-muted-foreground">无示例</p>
                     )}
                   </div>
+
+                  <Separator />
+
+                  <div>
+                    <h4 className="mb-2 text-sm font-medium">元信息</h4>
+                    <div className="space-y-1 text-sm">
+                      <p>
+                        <span className="text-muted-foreground">创建人：</span>
+                        {selectedComponent.ownerName || "未知"}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">创建时间：</span>
+                        {new Date(selectedComponent.createdAt).toLocaleString("zh-CN")}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">更新时间：</span>
+                        {new Date(selectedComponent.updatedAt).toLocaleString("zh-CN")}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </ScrollArea>
           </Card>
         )}
       </div>
+
+      {/* 新建/编辑组件弹窗 */}
+      <Dialog open={componentDialogOpen} onOpenChange={setComponentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingComponent ? "编辑组件" : "新建组件"}</DialogTitle>
+            <DialogDescription>
+              {editingComponent ? "修改组件信息" : "填写组件基本信息"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="comp-name">组件名称</Label>
+              <Input
+                id="comp-name"
+                placeholder="请输入组件名称"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="comp-desc">组件描述</Label>
+              <Textarea
+                id="comp-desc"
+                placeholder="请输入组件描述"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>组件类型</Label>
+              <Select
+                value={form.type}
+                onValueChange={(v) => setForm({ ...form, type: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {componentTypes.filter(t => t.value).map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="comp-category">分类标签</Label>
+              <Input
+                id="comp-category"
+                placeholder="如：用户认证、数据查询"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setComponentDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleSave} disabled={!form.name.trim()}>
+              {editingComponent ? "保存" : "创建"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除确认弹窗 */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+            <DialogDescription>
+              确定要删除组件 "{selectedComponent?.name}" 吗？该操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              确认删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
